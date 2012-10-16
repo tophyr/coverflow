@@ -1,6 +1,7 @@
 package com.tophyr.custompagerdemo;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +17,10 @@ public class CustomPagerDemo extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.custom_pager_demo);
         
-        CustomPager cp = (CustomPager)findViewById(R.id.custompager);
+        CoverFlow cp = (CoverFlow)findViewById(R.id.custompager);
+        cp.setFocusable(true);
+        cp.setFocusableInTouchMode(true);
+        cp.requestFocus();
         
         Integer[] images = new Integer[] {
     		R.drawable.img0,
@@ -39,6 +43,7 @@ public class CustomPagerDemo extends Activity {
         			v = new ImageView(getContext());
         			v.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
         			v.setScaleType(ScaleType.FIT_CENTER);
+        			v.setBackgroundColor(Color.LTGRAY);
         		}
         		
         		v.setImageDrawable(getResources().getDrawable(getItem(position)));
