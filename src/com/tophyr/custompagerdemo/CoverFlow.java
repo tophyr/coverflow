@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
@@ -23,6 +24,8 @@ public class CoverFlow extends AdapterView<Adapter> {
 	private int m_CurrentPosition;
 	private boolean m_Selected;
 	
+	private final DataSetObserver m_AdapterObserver;
+	
 	public CoverFlow(Context context) {
 		this(context, null);
 	}
@@ -31,6 +34,24 @@ public class CoverFlow extends AdapterView<Adapter> {
 		super(context, attrs);
 		
 		m_Views = new View[1 + 2 * NUM_VIEWS_ON_SIDE + 2 * NUM_VIEWS_OFFSCREEN];
+		
+		m_AdapterObserver = new DataSetObserver() {
+			@Override
+			public void onChanged() {
+				
+			}
+			
+			@Override
+			public void onInvalidated() {
+				
+			}
+		};
+	}
+	
+	@Override
+	protected void finalize() {
+		if (m_Adapter != null)
+			m_Adapter.unregisterDataSetObserver(m_AdapterObserver);
 	}
 
 	@Override
@@ -126,7 +147,20 @@ public class CoverFlow extends AdapterView<Adapter> {
 	}
 	
 	public void setAdapter(Adapter adapter) {
+		if (m_Adapter != null)
+			m_Adapter.unregisterDataSetObserver(m_AdapterObserver);
+		
 		m_Adapter = adapter;
+		
+		removeAllViewsInLayout();
+		m_CurrentPosition = -1;
+		
+		if (m_Adapter == null) {
+			m_RecycledViews = null; // TODO: introducing possible NPE's! code was written expecing this to never be null.
+			m_Views = null; // TODO: possible NPE's !
+			return;
+		}
+		
 		m_RecycledViews = new ArrayList<Queue<View>>(m_Adapter.getViewTypeCount());
 		for (int i = 0; i < m_Adapter.getViewTypeCount(); i++)
 			m_RecycledViews.add(new LinkedList<View>());
@@ -134,9 +168,8 @@ public class CoverFlow extends AdapterView<Adapter> {
 		for (int i = 0; i < m_Views.length; i++)
 			m_Views[i] = null;
 		
-		removeAllViewsInLayout();
+		m_Adapter.registerDataSetObserver(m_AdapterObserver);
 		
-		m_CurrentPosition = -1;
 		setPosition(0);
 	}
 	
