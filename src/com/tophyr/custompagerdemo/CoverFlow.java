@@ -10,10 +10,10 @@ import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Adapter;
-import android.widget.AdapterView;
 
-public class CoverFlow extends AdapterView<Adapter> {
+public class CoverFlow extends ViewGroup {
 	
 	private static final int NUM_VIEWS_ON_SIDE = 2;
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
@@ -133,19 +133,20 @@ public class CoverFlow extends AdapterView<Adapter> {
 		}
 	}
 	
-	@Override
-	public View getSelectedView() {
-		return m_Selected ? m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] : null;
-	}
-
-	@Override
-	public void setSelection(int position) {
-		if (position != m_CurrentPosition)
-			setPosition(position);
-		
-		m_Selected = true;
-	}
-	
+//	@Override
+//	public View getSelectedView() {
+//		return m_Selected ? m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] : null;
+//	}
+//
+//	@Override
+//	public void setSelection(int position) {
+//		if (position != m_CurrentPosition)
+//			setPosition(position);
+//		
+//		m_Selected = true;
+//	}
+//	
+//	@Override
 	public void setAdapter(Adapter adapter) {
 		if (m_Adapter != null)
 			m_Adapter.unregisterDataSetObserver(m_AdapterObserver);
@@ -207,32 +208,36 @@ public class CoverFlow extends AdapterView<Adapter> {
 		m_Views[viewIndex] = newView;
 	}
 	
+	private void shiftViews(int shift) {
+		if (Math.abs(shift) >= m_Views.length) {
+			// whole m_Views list is invalid
+			for (int i = 0; i < m_Views.length; i++) {
+				recycleView(i);
+			}
+		} else if (shift < 0) {
+			// we want to scroll left, so we need to move items right
+			for (int i = m_Views.length - 1; i >= 0; i--) {
+				if (i + shift >= m_Views.length)
+					recycleView(i);
+				m_Views[i] = (i + shift < 0) ? null : m_Views[i + shift];
+			}
+		} else {
+			// all other options exhausted, they must want to scroll right, so move items left
+			for (int i = 0; i < m_Views.length; i++) {
+				if (i + shift < 0)
+					recycleView(i);
+				m_Views[i] = (i + shift >= m_Views.length) ? null : m_Views[i + shift];
+			}
+		}
+	}
+	
 	public void setPosition(int position) {
 		if (position < 0 || position >= m_Adapter.getCount())
 			throw new IndexOutOfBoundsException("Cannot set position beyond bounds of adapter.");
 		if (position == m_CurrentPosition)
 			return;
 		
-		if (m_CurrentPosition == -1 || Math.abs(m_CurrentPosition - position) >= m_Views.length) {
-			// whole m_Views list is invalid
-			for (int i = 0; i < m_Views.length; i++) {
-				recycleView(i);
-			}
-		} else if (position < m_CurrentPosition) {
-			// we want to scroll left, so we need to move items right
-			for (int i = m_Views.length - 1; i >= 0; i--) {
-				if (i + position - m_CurrentPosition >= m_Views.length)
-					recycleView(i);
-				m_Views[i] = (i + position - m_CurrentPosition < 0) ? null : m_Views[i + position - m_CurrentPosition];
-			}
-		} else {
-			// all other options exhausted, they must want to scroll right, so move items left
-			for (int i = 0; i < m_Views.length; i++) {
-				if (i - position + m_CurrentPosition < 0)
-					recycleView(i);
-				m_Views[i] = (i + position - m_CurrentPosition >= m_Views.length) ? null : m_Views[i + position - m_CurrentPosition];
-			}
-		}
+		shiftViews(m_CurrentPosition == -1 ? Integer.MAX_VALUE : position - m_CurrentPosition);
 		
 		m_Selected = false;
 		m_CurrentPosition = position;
