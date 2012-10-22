@@ -8,13 +8,24 @@ import java.util.Queue;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Adapter;
 
 public class CoverFlow extends ViewGroup {
+	
+	private static enum TouchState {
+		NONE,
+		DOWN,
+		SCROLLING,
+		DRAGGING;
+		
+		public float X;
+	}
 	
 	private static final int NUM_VIEWS_ON_SIDE = 2;
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
@@ -27,6 +38,7 @@ public class CoverFlow extends ViewGroup {
 	private int m_CurrentPosition;
 	private boolean m_Selected;
 	private int m_ScrollOffset;
+	private TouchState m_TouchState;
 	
 	private final DataSetObserver m_AdapterObserver;
 	
@@ -269,6 +281,24 @@ public class CoverFlow extends ViewGroup {
 		requestLayout();
 	}
 	
+	private void adjustScrollOffset(int delta) {
+		m_ScrollOffset += delta;
+		
+		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
+		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
+			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
+			if (newPosition >= m_Adapter.getCount()) {
+				newPosition = m_Adapter.getCount() - 1;
+				m_ScrollOffset = (int)(crossover - 1);
+			} else if (newPosition < 0) {
+				newPosition = 0;
+				m_ScrollOffset = (int)(1 - crossover);
+			}
+			setPosition(newPosition);
+			m_ScrollOffset %= crossover;
+		}
+	}
+	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && m_CurrentPosition > 0) {
@@ -289,5 +319,37 @@ public class CoverFlow extends ViewGroup {
 		}
 		
 		return super.onKeyDown(keyCode, event);
+	}
+	
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		if (event.getAction() == MotionEvent.ACTION_DOWN) {
+			m_TouchState = TouchState.DOWN;
+			m_TouchState.X = event.getX();
+		}
+		else if (event.getAction() == MotionEvent.ACTION_MOVE) {
+			if (m_TouchState == TouchState.DOWN) {
+				if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+					m_TouchState = TouchState.SCROLLING;
+					m_TouchState.X = event.getX();
+				}
+			} else if (m_TouchState == TouchState.SCROLLING) {
+				float x = event.getX();
+				adjustScrollOffset((int)(m_TouchState.X - x));
+				m_TouchState.X = x;
+				requestLayout();
+			}
+			else {
+				Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN or SCROLLING.");
+			}
+		}
+		else if (event.getAction() == MotionEvent.ACTION_CANCEL ||
+				 event.getAction() == MotionEvent.ACTION_UP) {
+			m_TouchState = TouchState.NONE;
+		}
+		else
+			return super.onTouchEvent(event);
+		
+		return true;
 	}
 }
