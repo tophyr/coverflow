@@ -9,6 +9,7 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
@@ -18,11 +19,14 @@ public class CoverFlow extends ViewGroup {
 	private static final int NUM_VIEWS_ON_SIDE = 2;
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
 	
+	private static final double HORIZ_MARGIN_FRACTION = .1;
+	
 	private Adapter m_Adapter;
 	private View[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
 	private boolean m_Selected;
+	private int m_ScrollOffset;
 	
 	private final DataSetObserver m_AdapterObserver;
 	
@@ -105,32 +109,28 @@ public class CoverFlow extends ViewGroup {
 		final int myWidth = getMeasuredWidth();
 		final int myHeight = getMeasuredHeight();
 		
-		int hOffset, vWidth, vHeight;
-		View v;
+		final int numVisibleViews = NUM_VIEWS_ON_SIDE + 1 + NUM_VIEWS_ON_SIDE;
+		final int hMargin = (int)(myWidth * HORIZ_MARGIN_FRACTION);
+		int hCenterOffset;
 		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
-			hOffset = i * myWidth / (NUM_VIEWS_ON_SIDE * 4 + 1) - (int)(myHeight * .8 / 4);
+			hCenterOffset = (int)(i * (double)myWidth / numVisibleViews + hMargin);
 			
-			v = m_Views[i + NUM_VIEWS_OFFSCREEN];
-			if (v != null) {
-				vWidth = v.getMeasuredWidth();
-				vHeight = v.getMeasuredHeight();
-				v.layout(hOffset, (myHeight - vHeight) / 2, hOffset + vWidth, (myHeight + vHeight) / 2);
-			}
-			
-			v = m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1];
-			if (v != null) {
-				vWidth = v.getMeasuredWidth();
-				vHeight = v.getMeasuredHeight();
-				v.layout(myWidth - (vWidth + hOffset), (myHeight - vHeight) / 2, myWidth - hOffset, (myHeight + vHeight) / 2);
-			}
+			layoutView(m_Views[i + NUM_VIEWS_OFFSCREEN], hCenterOffset, myWidth, myHeight);
+			layoutView(m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1], myWidth - hCenterOffset, myWidth, myHeight);
 		}
 		
-		v = m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE];
-		if (v != null) {
-			vWidth = v.getMeasuredWidth();
-			vHeight = v.getMeasuredHeight();
-			v.layout((myWidth - vWidth) / 2, (myHeight - vHeight) / 2, (myWidth + vWidth) / 2, (myHeight + vHeight) / 2);
-		}
+		layoutView(m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE], myWidth / 2, myWidth, myHeight);
+	}
+	
+	private void layoutView(final View v, int xCenter, final int totalWidth, final int totalHeight) {
+		if (v == null)
+			return;
+		
+		final int vWidth = v.getMeasuredWidth();
+		final int vHeight = v.getMeasuredHeight();
+		xCenter -= m_ScrollOffset;
+		v.layout(xCenter - vWidth / 2, (totalHeight - vHeight) / 2, xCenter + vWidth / 2, (totalHeight + vHeight) / 2);
+		v.setRotationY(90f * (totalWidth - xCenter * 2) / totalWidth);
 	}
 	
 //	@Override
@@ -255,23 +255,16 @@ public class CoverFlow extends ViewGroup {
 		}
 		
 		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
-			int degrees = 75 - i * (30 / NUM_VIEWS_ON_SIDE);
 			
-			if (m_Views[i + NUM_VIEWS_OFFSCREEN] != null) {
+			if (m_Views[i + NUM_VIEWS_OFFSCREEN] != null)
 				m_Views[i + NUM_VIEWS_OFFSCREEN].bringToFront();
-				m_Views[i + NUM_VIEWS_OFFSCREEN].setRotationY(degrees);
-			}
 			
-			if (m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1] != null) {
+			if (m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1] != null)
 				m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1].bringToFront();
-				m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1].setRotationY(-degrees);
-			}
 		}
 		
-		if (m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] != null) {
+		if (m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] != null)
 			m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE].bringToFront();
-			m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE].setRotationY(0);
-		}
 		
 		requestLayout();
 	}
@@ -285,6 +278,14 @@ public class CoverFlow extends ViewGroup {
 		if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && m_CurrentPosition < m_Views.length) {
 			setPosition(m_CurrentPosition + 1);
 			return true;
+		}
+		if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+			m_ScrollOffset++;
+			requestLayout();
+		}
+		if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+			m_ScrollOffset--;
+			requestLayout();
 		}
 		
 		return super.onKeyDown(keyCode, event);
