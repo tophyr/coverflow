@@ -42,6 +42,7 @@ public class CoverFlow extends ViewGroup {
 	private boolean m_Selected;
 	private int m_ScrollOffset;
 	private TouchState m_TouchState;
+	private ValueAnimator m_Animator;
 	
 	private final DataSetObserver m_AdapterObserver;
 	
@@ -332,6 +333,8 @@ public class CoverFlow extends ViewGroup {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
 			m_TouchState = TouchState.DOWN;
 			m_TouchState.X = event.getX();
+			if (m_Animator != null)
+				m_Animator.cancel();
 		}
 		else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 			if (m_TouchState == TouchState.DOWN) {
@@ -351,9 +354,11 @@ public class CoverFlow extends ViewGroup {
 		else if (event.getAction() == MotionEvent.ACTION_CANCEL ||
 				 event.getAction() == MotionEvent.ACTION_UP) {
 			m_TouchState = TouchState.NONE;
-			ValueAnimator anim = ValueAnimator.ofInt(m_ScrollOffset, 0);
-			anim.setInterpolator(new DecelerateInterpolator());
-			anim.addUpdateListener(new AnimatorUpdateListener() {
+			if (m_Animator != null)
+				m_Animator.cancel();
+			m_Animator = ValueAnimator.ofInt(m_ScrollOffset, 0);
+			m_Animator.setInterpolator(new DecelerateInterpolator());
+			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
 				@Override
 				public void onAnimationUpdate(ValueAnimator animation) {
 					int delta = (Integer)animation.getAnimatedValue() - m_ScrollOffset;
@@ -361,7 +366,7 @@ public class CoverFlow extends ViewGroup {
 					adjustScrollOffset(delta);
 				}
 			});
-			anim.start();
+			m_Animator.start();
 		}
 		else
 			return super.onTouchEvent(event);
