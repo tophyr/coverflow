@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import android.animation.ValueAnimator;
+import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.util.AttributeSet;
@@ -14,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Adapter;
 
 public class CoverFlow extends ViewGroup {
@@ -282,6 +285,9 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private void adjustScrollOffset(int delta) {
+		if (delta == 0)
+			return;
+		
 		m_ScrollOffset += delta;
 		
 		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
@@ -297,6 +303,8 @@ public class CoverFlow extends ViewGroup {
 			setPosition(newPosition);
 			m_ScrollOffset %= crossover;
 		}
+		
+		requestLayout();
 	}
 	
 	@Override
@@ -310,12 +318,10 @@ public class CoverFlow extends ViewGroup {
 			return true;
 		}
 		if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-			m_ScrollOffset++;
-			requestLayout();
+			adjustScrollOffset(1);
 		}
 		if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-			m_ScrollOffset--;
-			requestLayout();
+			adjustScrollOffset(-1);
 		}
 		
 		return super.onKeyDown(keyCode, event);
@@ -337,7 +343,6 @@ public class CoverFlow extends ViewGroup {
 				float x = event.getX();
 				adjustScrollOffset((int)(m_TouchState.X - x));
 				m_TouchState.X = x;
-				requestLayout();
 			}
 			else {
 				Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN or SCROLLING.");
@@ -346,6 +351,17 @@ public class CoverFlow extends ViewGroup {
 		else if (event.getAction() == MotionEvent.ACTION_CANCEL ||
 				 event.getAction() == MotionEvent.ACTION_UP) {
 			m_TouchState = TouchState.NONE;
+			ValueAnimator anim = ValueAnimator.ofInt(m_ScrollOffset, 0);
+			anim.setInterpolator(new DecelerateInterpolator());
+			anim.addUpdateListener(new AnimatorUpdateListener() {
+				@Override
+				public void onAnimationUpdate(ValueAnimator animation) {
+					int delta = (Integer)animation.getAnimatedValue() - m_ScrollOffset;
+					Log.d("CoverPagerDemo", "Interperlatin: " + delta);
+					adjustScrollOffset(delta);
+				}
+			});
+			anim.start();
 		}
 		else
 			return super.onTouchEvent(event);
