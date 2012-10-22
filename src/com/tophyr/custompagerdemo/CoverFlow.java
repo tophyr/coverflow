@@ -122,31 +122,37 @@ public class CoverFlow extends ViewGroup {
  
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		final int myWidth = getMeasuredWidth();
-		final int myHeight = getMeasuredHeight();
-		
-		final int numVisibleViews = NUM_VIEWS_ON_SIDE + 1 + NUM_VIEWS_ON_SIDE;
-		final int hMargin = (int)(myWidth * HORIZ_MARGIN_FRACTION);
-		int hCenterOffset;
 		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
-			hCenterOffset = (int)(i * (double)myWidth / numVisibleViews + hMargin);
-			
-			layoutView(m_Views[i + NUM_VIEWS_OFFSCREEN], hCenterOffset, myWidth, myHeight);
-			layoutView(m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1], myWidth - hCenterOffset, myWidth, myHeight);
+			layoutView(i + NUM_VIEWS_OFFSCREEN);
+			layoutView(m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1);
 		}
 		
-		layoutView(m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE], myWidth / 2, myWidth, myHeight);
+		layoutView(NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE);
 	}
 	
-	private void layoutView(final View v, int xCenter, final int totalWidth, final int totalHeight) {
+	private void layoutView(int viewIndex) {
+		View v = m_Views[viewIndex];
 		if (v == null)
 			return;
 		
 		final int vWidth = v.getMeasuredWidth();
 		final int vHeight = v.getMeasuredHeight();
-		xCenter -= m_ScrollOffset;
-		v.layout(xCenter - vWidth / 2, (totalHeight - vHeight) / 2, xCenter + vWidth / 2, (totalHeight + vHeight) / 2);
-		v.setRotationY(90f * (totalWidth - xCenter * 2) / totalWidth);
+		final int hMargin = (int)(getMeasuredWidth() * HORIZ_MARGIN_FRACTION);
+		final int availWidth = getMeasuredWidth() - 2 * hMargin;
+		final int totalHeight = getMeasuredHeight();
+		final double numVisibleViews = NUM_VIEWS_ON_SIDE + 1 + NUM_VIEWS_ON_SIDE;
+		
+		double positionRatio = (viewIndex - NUM_VIEWS_OFFSCREEN) / (numVisibleViews - NUM_VIEWS_OFFSCREEN); // gives [0, 1] range
+		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
+		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
+		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
+		
+		int hCenterOffset;
+		hCenterOffset = (int)(positionRatio * availWidth);
+		hCenterOffset += hMargin;
+		hCenterOffset -= m_ScrollOffset;
+		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
+		v.setRotationY(90f * (getMeasuredWidth() - hCenterOffset * 2) / getMeasuredWidth());
 	}
 	
 //	@Override
