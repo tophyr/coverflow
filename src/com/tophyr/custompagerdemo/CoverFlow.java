@@ -30,10 +30,10 @@ public class CoverFlow extends ViewGroup {
 		public float X;
 	}
 	
-	private static final int NUM_VIEWS_ON_SIDE = 2;
+	private static final int NUM_VIEWS_ON_SIDE = 0;
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
 	
-	private static final double HORIZ_MARGIN_FRACTION = .1;
+	private static final double HORIZ_MARGIN_FRACTION = 0.05;
 	
 	private Adapter m_Adapter;
 	private View[] m_Views;
@@ -122,9 +122,9 @@ public class CoverFlow extends ViewGroup {
  
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
-			layoutView(i + NUM_VIEWS_OFFSCREEN);
-			layoutView(m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1);
+		for (int i = 0; i < NUM_VIEWS_ON_SIDE + NUM_VIEWS_OFFSCREEN; i++) {
+			layoutView(i);
+			layoutView(m_Views.length - i - 1);
 		}
 		
 		layoutView(NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE);
@@ -140,20 +140,40 @@ public class CoverFlow extends ViewGroup {
 		final int hMargin = (int)(getMeasuredWidth() * HORIZ_MARGIN_FRACTION);
 		final int availWidth = getMeasuredWidth() - 2 * hMargin;
 		final int totalHeight = getMeasuredHeight();
-		final double numVisibleViews = NUM_VIEWS_ON_SIDE + 1 + NUM_VIEWS_ON_SIDE;
 		
-		double positionRatio = (viewIndex - NUM_VIEWS_OFFSCREEN) / (numVisibleViews - NUM_VIEWS_OFFSCREEN); // gives [0, 1] range
+		double positionRatio = viewIndex / (m_Views.length - 1.0); // gives [0, 1] range
 		positionRatio -= (double)m_ScrollOffset / availWidth;
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
+		v.setRotationY(90f * (1 - (float)positionRatio * 2));
 		
-		int hCenterOffset;
-		hCenterOffset = (int)(positionRatio * availWidth);
-		hCenterOffset += hMargin;
-		//hCenterOffset -= m_ScrollOffset;
+		final int hCenterOffset = (int)(positionRatio * availWidth) + hMargin;
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
-		v.setRotationY(90f * (getMeasuredWidth() - hCenterOffset * 2) / getMeasuredWidth());
+	}
+	
+	private void adjustScrollOffset(int delta) {
+		if (delta == 0)
+			return;
+		
+		m_ScrollOffset += delta;
+		
+		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / (m_Views.length - 1.0) / 2;//(NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
+		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
+			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
+			if (newPosition >= m_Adapter.getCount()) {
+				newPosition = m_Adapter.getCount() - 1;
+				m_ScrollOffset = (int)(crossover - 1);
+			} else if (newPosition < 0) {
+				newPosition = 0;
+				m_ScrollOffset = (int)(1 - crossover);
+			}
+			setPosition(newPosition);
+			m_ScrollOffset %= crossover;
+			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
+		}
+		
+		requestLayout();
 	}
 	
 //	@Override
@@ -229,6 +249,7 @@ public class CoverFlow extends ViewGroup {
 			recycleQueue.add(recycled);
 		
 		m_Views[viewIndex] = newView;
+		addView(newView);
 	}
 	
 	private void shiftViews(int shift) {
@@ -268,13 +289,6 @@ public class CoverFlow extends ViewGroup {
 		for (int i = 0; i < m_Views.length; i++) {
 			if (m_Views[i] == null)
 				loadView(i);
-			
-			if (m_Views[i] != null) {
-				if (i >= NUM_VIEWS_OFFSCREEN && i < m_Views.length - NUM_VIEWS_OFFSCREEN && m_Views[i].getParent() != this)
-					addView(m_Views[i]);
-				else if ((i < NUM_VIEWS_OFFSCREEN || i >= m_Views.length - NUM_VIEWS_OFFSCREEN) && m_Views[i].getParent() == this)
-					removeView(m_Views[i]);
-			}
 		}
 		
 		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
@@ -288,31 +302,6 @@ public class CoverFlow extends ViewGroup {
 		
 		if (m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] != null)
 			m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE].bringToFront();
-		
-		requestLayout();
-	}
-	
-	private void adjustScrollOffset(int delta) {
-		if (delta == 0)
-			return;
-		
-		m_ScrollOffset += delta;
-		
-		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
-		Log.d("CoverPagerDemo", "offset: " + m_ScrollOffset + " crossover: " + crossover);
-		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
-			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
-			if (newPosition >= m_Adapter.getCount()) {
-				newPosition = m_Adapter.getCount() - 1;
-				m_ScrollOffset = (int)(crossover - 1);
-			} else if (newPosition < 0) {
-				newPosition = 0;
-				m_ScrollOffset = (int)(1 - crossover);
-			}
-			setPosition(newPosition);
-			m_ScrollOffset %= crossover;
-			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
-		}
 		
 		requestLayout();
 	}
