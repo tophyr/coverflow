@@ -30,7 +30,7 @@ public class CoverFlow extends ViewGroup {
 		public float X;
 	}
 	
-	private static final int NUM_VIEWS_ON_SIDE = 0;
+	private static final int NUM_VIEWS_ON_SIDE = 2;
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
@@ -147,6 +147,7 @@ public class CoverFlow extends ViewGroup {
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
 		v.setRotationY(90f * (1 - (float)positionRatio * 2));
+		v.setVisibility((positionRatio > 0 && positionRatio < 1) ? View.VISIBLE : View.GONE);
 		
 		final int hCenterOffset = (int)(positionRatio * availWidth) + hMargin;
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
@@ -159,17 +160,27 @@ public class CoverFlow extends ViewGroup {
 		m_ScrollOffset += delta;
 		
 		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / (m_Views.length - 1.0) / 2;//(NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
-		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
+		if (m_ScrollOffset >= crossover) {
 			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 			if (newPosition >= m_Adapter.getCount()) {
 				newPosition = m_Adapter.getCount() - 1;
 				m_ScrollOffset = (int)(crossover - 1);
-			} else if (newPosition < 0) {
+			} else {
+				m_ScrollOffset = (int)(m_ScrollOffset % crossover - crossover);	
+			}
+			
+			setPosition(newPosition);
+			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
+		} else if (-m_ScrollOffset >= crossover) {
+			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
+			if (newPosition < 0) {
 				newPosition = 0;
 				m_ScrollOffset = (int)(1 - crossover);
+			} else {
+				m_ScrollOffset = (int)(m_ScrollOffset % crossover + crossover);
 			}
+			
 			setPosition(newPosition);
-			m_ScrollOffset %= crossover;
 			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
 		}
 		
