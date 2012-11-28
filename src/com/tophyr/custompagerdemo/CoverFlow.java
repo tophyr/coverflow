@@ -297,7 +297,8 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
+		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE - 2);
+		Log.d("CoverPagerDemo", "offset: " + m_ScrollOffset + " crossover: " + crossover);
 		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
 			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 			if (newPosition >= m_Adapter.getCount()) {
@@ -309,6 +310,7 @@ public class CoverFlow extends ViewGroup {
 			}
 			setPosition(newPosition);
 			m_ScrollOffset %= crossover;
+			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
 		}
 		
 		requestLayout();
@@ -368,7 +370,6 @@ public class CoverFlow extends ViewGroup {
 				@Override
 				public void onAnimationUpdate(ValueAnimator animation) {
 					int delta = (Integer)animation.getAnimatedValue() - m_ScrollOffset;
-					Log.d("CoverPagerDemo", "Interperlatin: " + delta);
 					adjustScrollOffset(delta);
 				}
 			});
