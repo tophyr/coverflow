@@ -143,6 +143,7 @@ public class CoverFlow extends ViewGroup {
 		final double numVisibleViews = NUM_VIEWS_ON_SIDE + 1 + NUM_VIEWS_ON_SIDE;
 		
 		double positionRatio = (viewIndex - NUM_VIEWS_OFFSCREEN) / (numVisibleViews - NUM_VIEWS_OFFSCREEN); // gives [0, 1] range
+		positionRatio -= (double)m_ScrollOffset / availWidth;
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
@@ -150,7 +151,7 @@ public class CoverFlow extends ViewGroup {
 		int hCenterOffset;
 		hCenterOffset = (int)(positionRatio * availWidth);
 		hCenterOffset += hMargin;
-		hCenterOffset -= m_ScrollOffset;
+		//hCenterOffset -= m_ScrollOffset;
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
 		v.setRotationY(90f * (getMeasuredWidth() - hCenterOffset * 2) / getMeasuredWidth());
 	}
@@ -297,7 +298,7 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE - 2);
+		double crossover = getMeasuredWidth() / (NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
 		Log.d("CoverPagerDemo", "offset: " + m_ScrollOffset + " crossover: " + crossover);
 		if (Math.abs(m_ScrollOffset / crossover) >= 1) {
 			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
