@@ -170,7 +170,6 @@ public class CoverFlow extends ViewGroup {
 			}
 			
 			setPosition(newPosition);
-			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
 		} else if (-m_ScrollOffset >= crossover) {
 			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 			if (newPosition < 0) {
@@ -181,7 +180,6 @@ public class CoverFlow extends ViewGroup {
 			}
 			
 			setPosition(newPosition);
-			Log.d("CoverPagerDemo", "Crossing over. New offset: " + m_ScrollOffset);
 		}
 		
 		requestLayout();
@@ -272,14 +270,14 @@ public class CoverFlow extends ViewGroup {
 		} else if (shift < 0) {
 			// we want to scroll left, so we need to move items right
 			for (int i = m_Views.length - 1; i >= 0; i--) {
-				if (i + shift >= m_Views.length)
+				if (i - shift >= m_Views.length)
 					recycleView(i);
 				m_Views[i] = (i + shift < 0) ? null : m_Views[i + shift];
 			}
 		} else {
 			// all other options exhausted, they must want to scroll right, so move items left
 			for (int i = 0; i < m_Views.length; i++) {
-				if (i + shift < 0)
+				if (i - shift < 0)
 					recycleView(i);
 				m_Views[i] = (i + shift >= m_Views.length) ? null : m_Views[i + shift];
 			}
