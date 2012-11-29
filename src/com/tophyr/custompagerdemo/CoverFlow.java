@@ -34,13 +34,14 @@ public class CoverFlow extends ViewGroup {
 	private static final int NUM_VIEWS_OFFSCREEN = 1;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
-	
+	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
+
 	private Adapter m_Adapter;
 	private View[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
 	private boolean m_Selected;
-	private int m_ScrollOffset;
+	private double m_ScrollOffset;
 	private TouchState m_TouchState;
 	private ValueAnimator m_Animator;
 	
@@ -153,7 +154,7 @@ public class CoverFlow extends ViewGroup {
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
 	}
 	
-	private void adjustScrollOffset(int delta) {
+	private void adjustScrollOffset(double delta) {
 		if (delta == 0)
 			return;
 		
@@ -351,7 +352,7 @@ public class CoverFlow extends ViewGroup {
 				}
 			} else if (m_TouchState == TouchState.SCROLLING) {
 				float x = event.getX();
-				adjustScrollOffset((int)(m_TouchState.X - x));
+				adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
 				m_TouchState.X = x;
 			}
 			else {
@@ -363,12 +364,12 @@ public class CoverFlow extends ViewGroup {
 			m_TouchState = TouchState.NONE;
 			if (m_Animator != null)
 				m_Animator.cancel();
-			m_Animator = ValueAnimator.ofInt(m_ScrollOffset, 0);
+			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
 			m_Animator.setInterpolator(new DecelerateInterpolator());
 			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
 				@Override
 				public void onAnimationUpdate(ValueAnimator animation) {
-					int delta = (Integer)animation.getAnimatedValue() - m_ScrollOffset;
+					float delta = (Float)animation.getAnimatedValue() - (float)m_ScrollOffset;
 					adjustScrollOffset(delta);
 				}
 			});
