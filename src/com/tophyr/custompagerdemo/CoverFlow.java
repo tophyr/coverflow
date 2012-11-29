@@ -159,7 +159,7 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / (m_Views.length - 1.0) / 2;//(NUM_VIEWS_ON_SIDE + 1.0 + NUM_VIEWS_ON_SIDE);
+		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / (m_Views.length - 1.0) / 2;
 		if (m_ScrollOffset >= crossover) {
 			int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 			if (newPosition >= m_Adapter.getCount()) {
