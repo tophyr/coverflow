@@ -3,8 +3,8 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <com.tophyr.custompagerdemo.CoverFlow
-        android:id="@+id/custompager"
+    <com.tophyr.coverflow.CoverFlow
+        android:id="@+id/coverflow"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"/>
 

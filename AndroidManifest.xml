@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.tophyr.custompagerdemo"
+    package="com.tophyr.coverflow"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -13,7 +13,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name=".CustomPagerDemo"
-            android:label="@string/title_activity_custom_pager_demo" >
+            android:label="@string/title_activity_cover_flow_demo" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

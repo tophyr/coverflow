@@ -1,5 +1,4 @@
-package com.tophyr.custompagerdemo;
-
+package com.tophyr.coverflow;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

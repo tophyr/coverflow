@@ -1,6 +1,6 @@
 <resources>
 
-    <string name="app_name">CustomPagerDemo</string>
-    <string name="title_activity_custom_pager_demo">CustomPagerDemo</string>
+    <string name="app_name">CoverFlowDemo</string>
+    <string name="title_activity_cover_flow_demo">CoverFlowDemo</string>
 
 </resources>

@@ -1,4 +1,6 @@
-package com.tophyr.custompagerdemo;
+package com.tophyr.coverflow;
+
+import com.tophyr.coverflow.R;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -10,14 +12,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
-public class CustomPagerDemo extends Activity {
+public class CoverFlowDemo extends Activity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.custom_pager_demo);
+        setContentView(R.layout.cover_flow_demo);
         
-        CoverFlow cp = (CoverFlow)findViewById(R.id.custompager);
+        CoverFlow cp = (CoverFlow)findViewById(R.id.coverflow);
         cp.setFocusable(true);
         cp.setFocusableInTouchMode(true);
         cp.requestFocus();
