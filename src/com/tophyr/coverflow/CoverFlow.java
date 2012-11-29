@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.Adapter;
 
 public class CoverFlow extends ViewGroup {
@@ -28,7 +29,8 @@ public class CoverFlow extends ViewGroup {
 		SCROLLING,
 		DRAGGING,
 		SETTLING,
-		DRAG_SETTLING;
+		DRAG_SETTLING,
+		DRAG_SHIFTING;
 		
 		public float X;
 	}
@@ -43,8 +45,10 @@ public class CoverFlow extends ViewGroup {
 	private View[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
-	private boolean m_Selected;
+	private View m_SelectedView;
+	private int m_SelectedPosition;
 	private double m_ScrollOffset;
+	private double m_DragShiftOffset;
 	private TouchState m_TouchState;
 	private ValueAnimator m_Animator;
 	
@@ -141,6 +145,18 @@ public class CoverFlow extends ViewGroup {
 		if (v == null)
 			return;
 		
+		double offset;
+		if (m_TouchState == TouchState.DRAG_SHIFTING && viewIndex != NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE) {
+			offset = m_DragShiftOffset;
+			if (viewIndex == (NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE + (int)Math.signum(m_DragShiftOffset))) {
+				Log.d("CoverFlow", "Doubling offset for viewIndex " + viewIndex);
+				offset *= 2;
+			}
+		}
+		else {
+			offset = m_ScrollOffset;
+		}
+		
 		final int vWidth = v.getMeasuredWidth();
 		final int vHeight = v.getMeasuredHeight();
 		final int hMargin = (int)(getMeasuredWidth() * HORIZ_MARGIN_FRACTION);
@@ -148,7 +164,7 @@ public class CoverFlow extends ViewGroup {
 		final int totalHeight = getMeasuredHeight();
 		
 		double positionRatio = viewIndex / (m_Views.length - 1.0); // gives [0, 1] range
-		positionRatio -= (double)m_ScrollOffset / availWidth;
+		positionRatio -= offset / availWidth;
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
@@ -188,16 +204,63 @@ public class CoverFlow extends ViewGroup {
 				
 				setPosition(newPosition);
 			}
-		} else if (m_TouchState == TouchState.DRAGGING) {
+		} else if (m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 			if (m_ScrollOffset >= crossover) {
 				m_ScrollOffset = crossover - 1;
+				
+				if (m_TouchState == TouchState.DRAGGING) {
+					shift(-2 * (float)crossover);
+				}
 			}
 			if (m_ScrollOffset <= -crossover) {
 				m_ScrollOffset = 1 - crossover;
+				
+				if (m_TouchState == TouchState.DRAGGING) {
+					shift(2 * (float)crossover);
+				}
 			}
 		}
 		
 		requestLayout();
+	}
+	
+	private void shift(float shift) {
+		m_TouchState = TouchState.DRAG_SHIFTING;
+		
+		if (m_Animator != null)
+			m_Animator.cancel();
+		m_Animator = ValueAnimator.ofFloat(shift);
+		m_Animator.setDuration(1000);
+		m_Animator.setInterpolator(new LinearInterpolator());
+		m_Animator.addUpdateListener(new AnimatorUpdateListener() {
+			@Override
+			public void onAnimationUpdate(ValueAnimator animation) {
+				m_DragShiftOffset = (Float)animation.getAnimatedValue();
+				requestLayout();
+				Log.d("CoverFlow", "Animating shift.");
+			}
+		});
+		m_Animator.addListener(new AnimatorListener() {
+			@Override
+			public void onAnimationStart(Animator animation) {
+				Log.d("CoverFlow", "Shift animation begun.");
+			}
+
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				m_TouchState = TouchState.DRAGGING;
+				Log.d("CoverFlow", "Shift animation ended.");
+			}
+
+			@Override
+			public void onAnimationCancel(Animator animation) {
+				Log.d("CoverFlow", "Shift animation canceled.");
+			}
+
+			@Override
+			public void onAnimationRepeat(Animator animation) {}
+		});
+		m_Animator.start();
 	}
 	
 //	@Override
@@ -307,7 +370,7 @@ public class CoverFlow extends ViewGroup {
 		
 		shiftViews(m_CurrentPosition == -1 ? Integer.MAX_VALUE : position - m_CurrentPosition);
 		
-		m_Selected = false;
+		m_SelectedView = null;
 		m_CurrentPosition = position;
 		
 		for (int i = 0; i < m_Views.length; i++) {
@@ -363,11 +426,15 @@ public class CoverFlow extends ViewGroup {
 				if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
 					m_TouchState = TouchState.DRAGGING;//SCROLLING;
 					m_TouchState.X = event.getX();
+					// this should only be for entering dragging
+					m_SelectedView = m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE];
 				}
 			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING) {
 				float x = event.getX();
 				adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
 				m_TouchState.X = x;
+			} else if (m_TouchState == TouchState.DRAG_SHIFTING) {
+				
 			}
 			else {
 				Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
