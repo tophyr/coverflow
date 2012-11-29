@@ -53,5 +53,7 @@ public class CoverFlowDemo extends Activity {
         		return v;
         	}
         });
+        
+        cp.setPosition(3);
     }
 }
