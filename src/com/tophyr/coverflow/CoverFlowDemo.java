@@ -43,7 +43,7 @@ public class CoverFlowDemo extends Activity {
         			v = (ImageView)convert;
         		else {
         			v = new ImageView(getContext());
-        			v.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+        			v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         			v.setScaleType(ScaleType.FIT_CENTER);
         			v.setBackgroundColor(Color.LTGRAY);
         		}
