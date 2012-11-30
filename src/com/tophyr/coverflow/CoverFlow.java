@@ -149,7 +149,6 @@ public class CoverFlow extends ViewGroup {
 		if (m_TouchState == TouchState.DRAG_SHIFTING && viewIndex != NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE) {
 			offset = m_DragShiftOffset;
 			if (viewIndex == (NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE + (int)Math.signum(m_DragShiftOffset))) {
-				Log.d("CoverFlow", "Doubling offset for viewIndex " + viewIndex);
 				offset *= 2;
 			}
 		}
@@ -232,42 +231,44 @@ public class CoverFlow extends ViewGroup {
 		if (m_Animator != null)
 			m_Animator.cancel();
 		m_Animator = ValueAnimator.ofFloat(0, shift);
-		m_Animator.setDuration(2000);
+		//m_Animator.setDuration(2000);
 		m_Animator.setInterpolator(new LinearInterpolator());
-		m_Animator.addUpdateListener(new AnimatorUpdateListener() {
+		
+		final AnimatorUpdateListener aul = new AnimatorUpdateListener() {
 			@Override
 			public void onAnimationUpdate(ValueAnimator animation) {
 				m_DragShiftOffset = (Float)animation.getAnimatedValue();
 				requestLayout();
-				Log.d("CoverFlow", "Animating shift.");
 			}
-		});
+		};
+		m_Animator.addUpdateListener(aul);
 		m_Animator.addListener(new AnimatorListener() {
 			private boolean m_Canceled;
 			private boolean m_2ndRun;
 			
 			@Override
-			public void onAnimationStart(Animator animation) {
-				Log.d("CoverFlow", "Shift animation begun.");
-			}
+			public void onAnimationStart(Animator animation) {}
 
 			@Override
 			public void onAnimationEnd(Animator animation) {
+				Log.d("CoverFlow", "Shift animation ended. Canceled: " + m_Canceled + " 2ndRun: " + m_2ndRun);
 				if (!m_Canceled && !m_2ndRun) {
 					setPosition(m_CurrentPosition + shiftdir, true);
-					m_Animator.setFloatValues(-shift, 0);
 					m_2ndRun = true;
+					
+					m_Animator = ValueAnimator.ofFloat(-shift, 0);
+					m_Animator.addUpdateListener(aul);
+					m_Animator.addListener(this);
 					m_Animator.start();
 				} else {
+					Log.d("CoverFlow", "Anim ended.");
 					m_TouchState = TouchState.DRAGGING;
 				}
-				Log.d("CoverFlow", "Shift animation ended.");
 			}
 
 			@Override
 			public void onAnimationCancel(Animator animation) {
 				m_Canceled = true;
-				Log.d("CoverFlow", "Shift animation canceled.");
 			}
 
 			@Override
@@ -476,6 +477,7 @@ public class CoverFlow extends ViewGroup {
 			if (m_Animator != null)
 				m_Animator.cancel();
 			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
+			//m_Animator.setDuration(2000);
 			m_Animator.setInterpolator(new DecelerateInterpolator());
 			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
 				@Override
