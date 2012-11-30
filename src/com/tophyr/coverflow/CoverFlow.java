@@ -35,8 +35,7 @@ public class CoverFlow extends ViewGroup {
 		public float X;
 	}
 	
-	private static final int NUM_VIEWS_ON_SIDE = 2;
-	private static final int NUM_VIEWS_OFFSCREEN = 1;
+	private static final int NUM_VIEWS_ON_SIDE = 3;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
@@ -61,7 +60,7 @@ public class CoverFlow extends ViewGroup {
 	public CoverFlow(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
-		m_Views = new View[1 + 2 * NUM_VIEWS_ON_SIDE + 2 * NUM_VIEWS_OFFSCREEN];
+		m_Views = new View[1 + 2 * NUM_VIEWS_ON_SIDE];
 		
 		m_AdapterObserver = new DataSetObserver() {
 			@Override
@@ -131,13 +130,13 @@ public class CoverFlow extends ViewGroup {
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		if (m_TouchState != TouchState.DRAGGING && m_TouchState != TouchState.DRAG_SETTLING) {
-			for (int i = 0; i < NUM_VIEWS_ON_SIDE + NUM_VIEWS_OFFSCREEN; i++) {
+			for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
 				layoutView(i);
 				layoutView(m_Views.length - i - 1);
 			}
 		}
 		
-		layoutView(NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE);
+		layoutView(NUM_VIEWS_ON_SIDE);
 	}
 	
 	private void layoutView(int viewIndex) {
@@ -146,9 +145,9 @@ public class CoverFlow extends ViewGroup {
 			return;
 		
 		double offset;
-		if (m_TouchState == TouchState.DRAG_SHIFTING && viewIndex != NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE) {
+		if (m_TouchState == TouchState.DRAG_SHIFTING && viewIndex != NUM_VIEWS_ON_SIDE) {
 			offset = m_DragShiftOffset;
-			if (viewIndex == (NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE + (int)Math.signum(m_DragShiftOffset))) {
+			if (viewIndex == (NUM_VIEWS_ON_SIDE + (int)Math.signum(m_DragShiftOffset))) {
 				offset *= 2;
 			}
 		}
@@ -323,7 +322,7 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private int getAdapterIndex(int viewIndex) {
-		return m_CurrentPosition - NUM_VIEWS_ON_SIDE - NUM_VIEWS_OFFSCREEN + viewIndex;
+		return m_CurrentPosition - NUM_VIEWS_ON_SIDE + viewIndex;
 	}
 	
 	private void recycleView(int viewIndex) {
@@ -357,31 +356,31 @@ public class CoverFlow extends ViewGroup {
 		if (Math.abs(shift) >= m_Views.length) {
 			// whole m_Views list is invalid
 			for (int i = 0; i < m_Views.length; i++) {
-				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+				if (skipMiddle && i == NUM_VIEWS_ON_SIDE)
 					continue;
 				recycleView(i);
 			}
 		} else if (shift < 0) {
 			// we want to scroll left, so we need to move items right
 			for (int i = m_Views.length - 1; i >= 0; i--) {
-				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+				if (skipMiddle && i == NUM_VIEWS_ON_SIDE)
 					continue;
 				if (i - shift >= m_Views.length)
 					recycleView(i);
 				int newIndex = i + shift;
-				if (skipMiddle && i > NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE && newIndex <= NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+				if (skipMiddle && i > NUM_VIEWS_ON_SIDE && newIndex <= NUM_VIEWS_ON_SIDE)
 					newIndex--;
 				m_Views[i] = (newIndex < 0) ? null : m_Views[newIndex];
 			}
 		} else {
 			// all other options exhausted, they must want to scroll right, so move items left
 			for (int i = 0; i < m_Views.length; i++) {
-				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+				if (skipMiddle && i == NUM_VIEWS_ON_SIDE)
 					continue;
 				if (i - shift < 0)
 					recycleView(i);
 				int newIndex = i + shift;
-				if (skipMiddle && i < NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE && newIndex >= NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+				if (skipMiddle && i < NUM_VIEWS_ON_SIDE && newIndex >= NUM_VIEWS_ON_SIDE)
 					newIndex++;
 				m_Views[i] = (newIndex >= m_Views.length) ? null : m_Views[newIndex];
 			}
@@ -410,15 +409,15 @@ public class CoverFlow extends ViewGroup {
 		
 		for (int i = 0; i < NUM_VIEWS_ON_SIDE; i++) {
 			
-			if (m_Views[i + NUM_VIEWS_OFFSCREEN] != null)
-				m_Views[i + NUM_VIEWS_OFFSCREEN].bringToFront();
+			if (m_Views[i] != null)
+				m_Views[i].bringToFront();
 			
-			if (m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1] != null)
-				m_Views[m_Views.length - (i + NUM_VIEWS_OFFSCREEN) - 1].bringToFront();
+			if (m_Views[m_Views.length - i - 1] != null)
+				m_Views[m_Views.length - i - 1].bringToFront();
 		}
 		
-		if (m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] != null)
-			m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE].bringToFront();
+		if (m_Views[NUM_VIEWS_ON_SIDE] != null)
+			m_Views[NUM_VIEWS_ON_SIDE].bringToFront();
 		
 		requestLayout();
 	}
@@ -457,7 +456,7 @@ public class CoverFlow extends ViewGroup {
 					m_TouchState = TouchState.DRAGGING;//SCROLLING;
 					m_TouchState.X = event.getX();
 					// this should only be for entering dragging
-					m_SelectedView = m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE];
+					m_SelectedView = m_Views[NUM_VIEWS_ON_SIDE];
 				}
 			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 				float x = event.getX();
