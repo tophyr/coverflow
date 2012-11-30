@@ -3,6 +3,8 @@ package com.tophyr.coverflow;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
@@ -10,6 +12,7 @@ import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -61,6 +64,7 @@ public class CoverFlow extends ViewGroup {
 		super(context, attrs);
 		
 		m_Views = new View[1 + 2 * NUM_VIEWS_ON_SIDE];
+		m_SelectedPosition = -1;
 		
 		m_AdapterObserver = new DataSetObserver() {
 			@Override
@@ -449,6 +453,9 @@ public class CoverFlow extends ViewGroup {
 		return super.onKeyDown(keyCode, event);
 	}
 	
+	private static final int DRAG_DELAY = 500;
+	private Timer m_TouchDownTimer;
+	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -456,13 +463,30 @@ public class CoverFlow extends ViewGroup {
 			m_TouchState.X = event.getX();
 			if (m_Animator != null)
 				m_Animator.cancel();
+			if (m_TouchDownTimer != null)
+				Log.i("CoverFlow", "Received ACTION_DOWN but m_TouchDownTimer wasn't null.");
+			m_TouchDownTimer = new Timer();
+			m_TouchDownTimer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					float x = m_TouchState.X;
+					m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
+					m_TouchState.X = x;
+					m_SelectedPosition = m_CurrentPosition;
+					((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
+					m_TouchDownTimer = null;
+				}
+			}, DRAG_DELAY);
 		}
 		else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 			if (m_TouchState == TouchState.DOWN) {
 				if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
-					m_TouchState = TouchState.DRAGGING;
+					if (m_TouchDownTimer != null) {
+						m_TouchDownTimer.cancel();
+						m_TouchDownTimer = null;
+					}
+					m_TouchState = TouchState.SCROLLING;
 					m_TouchState.X = event.getX();
-					m_SelectedPosition = m_CurrentPosition;
 				}
 			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 				float x = event.getX();
@@ -479,6 +503,10 @@ public class CoverFlow extends ViewGroup {
 				m_TouchState = TouchState.DRAG_SETTLING;
 			else
 				m_TouchState = TouchState.SETTLING;
+			if (m_TouchDownTimer != null) {
+				m_TouchDownTimer.cancel();
+				m_TouchDownTimer = null;
+			}
 			if (m_Animator != null)
 				m_Animator.cancel();
 			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
@@ -498,10 +526,11 @@ public class CoverFlow extends ViewGroup {
 				@Override
 				public void onAnimationEnd(Animator animation) {
 					m_TouchState = TouchState.NONE;
-					if (m_SelectedPosition != m_CurrentPosition) {
+					if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
 						Log.d("CoverFlow", "Swapping.");
 						m_Adapter.swap(m_SelectedPosition, m_CurrentPosition);
 					}
+					m_SelectedPosition = -1;
 				}
 
 				@Override
