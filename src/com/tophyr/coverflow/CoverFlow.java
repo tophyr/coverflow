@@ -181,7 +181,7 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / (m_Views.length - 1.0) / 2;
+		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1.0) * 2);
 		if (m_TouchState == TouchState.SCROLLING) {
 			if (m_ScrollOffset >= crossover) {
 				int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
@@ -227,10 +227,12 @@ public class CoverFlow extends ViewGroup {
 	private void shift(final int shiftdir) {
 		m_TouchState = TouchState.DRAG_SHIFTING;
 		
+		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
+		
 		if (m_Animator != null)
 			m_Animator.cancel();
-		m_Animator = ValueAnimator.ofFloat(shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / (m_Views.length - 1));
-		m_Animator.setDuration(1000);
+		m_Animator = ValueAnimator.ofFloat(0, shift);
+		m_Animator.setDuration(2000);
 		m_Animator.setInterpolator(new LinearInterpolator());
 		m_Animator.addUpdateListener(new AnimatorUpdateListener() {
 			@Override
@@ -242,6 +244,7 @@ public class CoverFlow extends ViewGroup {
 		});
 		m_Animator.addListener(new AnimatorListener() {
 			private boolean m_Canceled;
+			private boolean m_2ndRun;
 			
 			@Override
 			public void onAnimationStart(Animator animation) {
@@ -250,9 +253,14 @@ public class CoverFlow extends ViewGroup {
 
 			@Override
 			public void onAnimationEnd(Animator animation) {
-				m_TouchState = TouchState.DRAGGING;
-				if (!m_Canceled)
+				if (!m_Canceled && !m_2ndRun) {
 					setPosition(m_CurrentPosition + shiftdir, true);
+					m_Animator.setFloatValues(-shift, 0);
+					m_2ndRun = true;
+					m_Animator.start();
+				} else {
+					m_TouchState = TouchState.DRAGGING;
+				}
 				Log.d("CoverFlow", "Shift animation ended.");
 			}
 
