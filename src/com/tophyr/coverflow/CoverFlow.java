@@ -450,12 +450,10 @@ public class CoverFlow extends ViewGroup {
 					// this should only be for entering dragging
 					m_SelectedView = m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE];
 				}
-			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING) {
+			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 				float x = event.getX();
 				adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
 				m_TouchState.X = x;
-			} else if (m_TouchState == TouchState.DRAG_SHIFTING) {
-				
 			}
 			else {
 				Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
