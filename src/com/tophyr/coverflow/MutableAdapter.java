@@ -33,4 +33,10 @@ public abstract class MutableAdapter<T> extends BaseAdapter {
 		onSwap(pos1, pos2);
 		notifyDataSetChanged();
 	}
+	
+	public abstract void onMove(int oldPos, int newPos);
+	public final void move(int oldPos, int newPos) {
+		onMove(oldPos, newPos);
+		notifyDataSetChanged();
+	}
 }

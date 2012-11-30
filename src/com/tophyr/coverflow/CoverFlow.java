@@ -6,12 +6,9 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import android.animation.Animator;
-import android.animation.Animator.AnimatorListener;
-import android.animation.ValueAnimator;
-import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.os.SystemClock;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -20,9 +17,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.LinearInterpolator;
 import android.widget.Adapter;
+//import android.animation.Animator;
+//import android.animation.Animator.AnimatorListener;
+//import android.animation.ValueAnimator;
+//import android.animation.ValueAnimator.AnimatorUpdateListener;
 
 public class CoverFlow extends ViewGroup {
 	
@@ -52,7 +51,7 @@ public class CoverFlow extends ViewGroup {
 	private double m_ScrollOffset;
 	private double m_DragShiftOffset;
 	private TouchState m_TouchState;
-	private ValueAnimator m_Animator;
+//	private ValueAnimator m_Animator;
 	
 	private final DataSetObserver m_AdapterObserver;
 	
@@ -143,6 +142,10 @@ public class CoverFlow extends ViewGroup {
 			}
 		}
 		
+		// only for animationless shit - get rid of this asap
+		if (m_TouchState == TouchState.DRAG_SHIFTING)
+			m_TouchState = TouchState.DRAGGING;
+		
 		layoutView(NUM_VIEWS_ON_SIDE);
 	}
 	
@@ -173,12 +176,14 @@ public class CoverFlow extends ViewGroup {
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
-		v.setRotationY(90f * (1 - (float)positionRatio * 2));
+		//v.setRotationY(90f * (1 - (float)positionRatio * 2));
 		v.setVisibility((positionRatio > 0 && positionRatio < 1) ? View.VISIBLE : View.GONE);
 		
 		final int hCenterOffset = (int)(positionRatio * availWidth) + hMargin;
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
 	}
+	
+	private long m_NextDragSwitchAllowed;
 	
 	private void adjustScrollOffset(double delta) {
 		if (delta == 0)
@@ -211,16 +216,16 @@ public class CoverFlow extends ViewGroup {
 			}
 		} else if (m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 			if (m_ScrollOffset >= crossover) {
-				m_ScrollOffset = crossover - 1;
+				m_ScrollOffset = crossover - 10;
 				
-				if (m_TouchState == TouchState.DRAGGING) {
+				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition > 0) {
 					shift(-1);
 				}
 			}
 			if (m_ScrollOffset <= -crossover) {
-				m_ScrollOffset = 1 - crossover;
+				m_ScrollOffset = 10 - crossover;
 				
-				if (m_TouchState == TouchState.DRAGGING) {
+				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition < m_Views.length - 1) {
 					shift(1);
 				}
 			}
@@ -230,57 +235,67 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private void shift(final int shiftdir) {
+		if (SystemClock.uptimeMillis() < m_NextDragSwitchAllowed)
+			return;
+		m_NextDragSwitchAllowed = SystemClock.uptimeMillis() + 300;
+
 		m_TouchState = TouchState.DRAG_SHIFTING;
-		
-		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
-		
-		if (m_Animator != null)
-			m_Animator.cancel();
-		m_Animator = ValueAnimator.ofFloat(0, shift);
-		//m_Animator.setDuration(2000);
-		m_Animator.setInterpolator(new LinearInterpolator());
-		
-		final AnimatorUpdateListener aul = new AnimatorUpdateListener() {
-			@Override
-			public void onAnimationUpdate(ValueAnimator animation) {
-				m_DragShiftOffset = (Float)animation.getAnimatedValue();
-				requestLayout();
-			}
-		};
-		m_Animator.addUpdateListener(aul);
-		m_Animator.addListener(new AnimatorListener() {
-			private boolean m_Canceled;
-			private boolean m_2ndRun;
-			
-			@Override
-			public void onAnimationStart(Animator animation) {}
+		setPosition(m_CurrentPosition + shiftdir, true);
 
-			@Override
-			public void onAnimationEnd(Animator animation) {
-				Log.d("CoverFlow", "Shift animation ended. Canceled: " + m_Canceled + " 2ndRun: " + m_2ndRun);
-				if (!m_Canceled && !m_2ndRun) {
-					setPosition(m_CurrentPosition + shiftdir, true);
-					m_2ndRun = true;
-					
-					m_Animator = ValueAnimator.ofFloat(-shift, 0);
-					m_Animator.addUpdateListener(aul);
-					m_Animator.addListener(this);
-					m_Animator.start();
-				} else {
-					Log.d("CoverFlow", "Anim ended.");
-					m_TouchState = TouchState.DRAGGING;
-				}
-			}
+		Log.d("CoverFlow", "Shifting.");
 
-			@Override
-			public void onAnimationCancel(Animator animation) {
-				m_Canceled = true;
-			}
 
-			@Override
-			public void onAnimationRepeat(Animator animation) {}
-		});
-		m_Animator.start();
+//		m_TouchState = TouchState.DRAG_SHIFTING;
+		
+//		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
+		
+//		if (m_Animator != null)
+//			m_Animator.cancel();
+//		m_Animator = ValueAnimator.ofFloat(0, shift);
+//		//m_Animator.setDuration(2000);
+//		m_Animator.setInterpolator(new LinearInterpolator());
+//		
+//		final AnimatorUpdateListener aul = new AnimatorUpdateListener() {
+//			@Override
+//			public void onAnimationUpdate(ValueAnimator animation) {
+//				m_DragShiftOffset = (Float)animation.getAnimatedValue();
+//				requestLayout();
+//			}
+//		};
+//		m_Animator.addUpdateListener(aul);
+//		m_Animator.addListener(new AnimatorListener() {
+//			private boolean m_Canceled;
+//			private boolean m_2ndRun;
+//			
+//			@Override
+//			public void onAnimationStart(Animator animation) {}
+//
+//			@Override
+//			public void onAnimationEnd(Animator animation) {
+//				Log.d("CoverFlow", "Shift animation ended. Canceled: " + m_Canceled + " 2ndRun: " + m_2ndRun);
+//				if (!m_Canceled && !m_2ndRun) {
+//					setPosition(m_CurrentPosition + shiftdir, true);
+//					m_2ndRun = true;
+//					
+//					m_Animator = ValueAnimator.ofFloat(-shift, 0);
+//					m_Animator.addUpdateListener(aul);
+//					m_Animator.addListener(this);
+//					m_Animator.start();
+//				} else {
+//					Log.d("CoverFlow", "Anim ended.");
+//					m_TouchState = TouchState.DRAGGING;
+//				}
+//			}
+//
+//			@Override
+//			public void onAnimationCancel(Animator animation) {
+//				m_Canceled = true;
+//			}
+//
+//			@Override
+//			public void onAnimationRepeat(Animator animation) {}
+//		});
+//		m_Animator.start();
 	}
 	
 //	@Override
@@ -461,8 +476,8 @@ public class CoverFlow extends ViewGroup {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
 			m_TouchState = TouchState.DOWN;
 			m_TouchState.X = event.getX();
-			if (m_Animator != null)
-				m_Animator.cancel();
+//			if (m_Animator != null)
+//				m_Animator.cancel();
 			if (m_TouchDownTimer != null)
 				Log.i("CoverFlow", "Received ACTION_DOWN but m_TouchDownTimer wasn't null.");
 			m_TouchDownTimer = new Timer();
@@ -507,39 +522,48 @@ public class CoverFlow extends ViewGroup {
 				m_TouchDownTimer.cancel();
 				m_TouchDownTimer = null;
 			}
-			if (m_Animator != null)
-				m_Animator.cancel();
-			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
-			//m_Animator.setDuration(2000);
-			m_Animator.setInterpolator(new DecelerateInterpolator());
-			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
-				@Override
-				public void onAnimationUpdate(ValueAnimator animation) {
-					float delta = (Float)animation.getAnimatedValue() - (float)m_ScrollOffset;
-					adjustScrollOffset(delta);
-				}
-			});
-			m_Animator.addListener(new AnimatorListener() {
-				@Override
-				public void onAnimationStart(Animator animation) {}
-
-				@Override
-				public void onAnimationEnd(Animator animation) {
-					m_TouchState = TouchState.NONE;
-					if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-						Log.d("CoverFlow", "Swapping.");
-						m_Adapter.swap(m_SelectedPosition, m_CurrentPosition);
-					}
-					m_SelectedPosition = -1;
-				}
-
-				@Override
-				public void onAnimationCancel(Animator animation) {}
-
-				@Override
-				public void onAnimationRepeat(Animator animation) {}
-			});
-			m_Animator.start();
+			
+			adjustScrollOffset(-m_ScrollOffset);
+			m_TouchState = TouchState.NONE;
+			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1 && false) {
+				Log.d("CoverFlow", "Swapping.");
+				m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
+			}
+			m_SelectedPosition = -1;
+			
+//			if (m_Animator != null)
+//				m_Animator.cancel();
+//			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
+//			//m_Animator.setDuration(2000);
+//			m_Animator.setInterpolator(new DecelerateInterpolator());
+//			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
+//				@Override
+//				public void onAnimationUpdate(ValueAnimator animation) {
+//					float delta = (Float)animation.getAnimatedValue() - (float)m_ScrollOffset;
+//					adjustScrollOffset(delta);
+//				}
+//			});
+//			m_Animator.addListener(new AnimatorListener() {
+//				@Override
+//				public void onAnimationStart(Animator animation) {}
+//
+//				@Override
+//				public void onAnimationEnd(Animator animation) {
+//					m_TouchState = TouchState.NONE;
+//					if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
+//						Log.d("CoverFlow", "Swapping.");
+//						m_Adapter.swap(m_SelectedPosition, m_CurrentPosition);
+//					}
+//					m_SelectedPosition = -1;
+//				}
+//
+//				@Override
+//				public void onAnimationCancel(Animator animation) {}
+//
+//				@Override
+//				public void onAnimationRepeat(Animator animation) {}
+//			});
+//			m_Animator.start();
 		}
 		else
 			return super.onTouchEvent(event);
