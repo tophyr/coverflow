@@ -40,7 +40,7 @@ public class CoverFlow extends ViewGroup {
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
 
-	private Adapter m_Adapter;
+	private MutableAdapter<?> m_Adapter;
 	private View[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
@@ -65,7 +65,10 @@ public class CoverFlow extends ViewGroup {
 		m_AdapterObserver = new DataSetObserver() {
 			@Override
 			public void onChanged() {
-				
+				Log.d("CoverFlow", "Data set changed!");
+				for (int i = 0; i < m_Views.length; i++)
+					recycleView(i);
+				loadAndOrderViews();
 			}
 			
 			@Override
@@ -290,7 +293,7 @@ public class CoverFlow extends ViewGroup {
 //	}
 //	
 //	@Override
-	public void setAdapter(Adapter adapter) {
+	public void setAdapter(MutableAdapter<?> adapter) {
 		if (m_Adapter != null)
 			m_Adapter.unregisterDataSetObserver(m_AdapterObserver);
 		
@@ -402,6 +405,10 @@ public class CoverFlow extends ViewGroup {
 		m_SelectedView = null;
 		m_CurrentPosition = position;
 		
+		loadAndOrderViews();
+	}
+	
+	private void loadAndOrderViews() {
 		for (int i = 0; i < m_Views.length; i++) {
 			if (m_Views[i] == null)
 				loadView(i);
@@ -453,10 +460,9 @@ public class CoverFlow extends ViewGroup {
 		else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 			if (m_TouchState == TouchState.DOWN) {
 				if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
-					m_TouchState = TouchState.DRAGGING;//SCROLLING;
+					m_TouchState = TouchState.DRAGGING;
 					m_TouchState.X = event.getX();
-					// this should only be for entering dragging
-					m_SelectedView = m_Views[NUM_VIEWS_ON_SIDE];
+					m_SelectedPosition = m_CurrentPosition;
 				}
 			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 				float x = event.getX();
@@ -492,6 +498,10 @@ public class CoverFlow extends ViewGroup {
 				@Override
 				public void onAnimationEnd(Animator animation) {
 					m_TouchState = TouchState.NONE;
+					if (m_SelectedPosition != m_CurrentPosition) {
+						Log.d("CoverFlow", "Swapping.");
+						m_Adapter.swap(m_SelectedPosition, m_CurrentPosition);
+					}
 				}
 
 				@Override

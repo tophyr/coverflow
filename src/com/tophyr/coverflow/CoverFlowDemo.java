@@ -1,14 +1,11 @@
 package com.tophyr.coverflow;
 
-import com.tophyr.coverflow.R;
-
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
@@ -24,7 +21,7 @@ public class CoverFlowDemo extends Activity {
         cp.setFocusableInTouchMode(true);
         cp.requestFocus();
         
-        Integer[] images = new Integer[] {
+        final Integer[] images = new Integer[] {
     		R.drawable.img0,
     		R.drawable.img1,
     		R.drawable.img2,
@@ -35,14 +32,14 @@ public class CoverFlowDemo extends Activity {
     		R.drawable.img7
         };
         
-        cp.setAdapter(new ArrayAdapter<Integer>(this, 0, images) {
+        cp.setAdapter(new MutableAdapter<Integer>() {
         	@Override
         	public View getView(int position, View convert, ViewGroup parent) {
         		ImageView v;
         		if (convert instanceof ImageView)
         			v = (ImageView)convert;
         		else {
-        			v = new ImageView(getContext());
+        			v = new ImageView(CoverFlowDemo.this);
         			v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         			v.setScaleType(ScaleType.FIT_CENTER);
         			v.setBackgroundColor(Color.LTGRAY);
@@ -52,6 +49,40 @@ public class CoverFlowDemo extends Activity {
         		
         		return v;
         	}
+
+			@Override
+			public int getCount() {
+				return images.length;
+			}
+
+			@Override
+			public Integer getItem(int position) {
+				return images[position];
+			}
+
+			@Override
+			public long getItemId(int position) {
+				return position;
+			}
+
+			@Override
+			public void onAdd(Integer added) { }
+
+			@Override
+			public void onRemove(int position) { }
+
+			@Override
+			public void onInsert(Integer added, int position) { }
+
+			@Override
+			public void onReplace(Integer replacing, int position) { }
+
+			@Override
+			public void onSwap(int pos1, int pos2) {
+				int temp = images[pos1];
+				images[pos1] = images[pos2];
+				images[pos2] = temp;
+			}
         });
         
         cp.setPosition(3);
