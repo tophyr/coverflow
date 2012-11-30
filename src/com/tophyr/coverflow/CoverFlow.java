@@ -209,14 +209,14 @@ public class CoverFlow extends ViewGroup {
 				m_ScrollOffset = crossover - 1;
 				
 				if (m_TouchState == TouchState.DRAGGING) {
-					shift(-2 * (float)crossover);
+					shift(-1);
 				}
 			}
 			if (m_ScrollOffset <= -crossover) {
 				m_ScrollOffset = 1 - crossover;
 				
 				if (m_TouchState == TouchState.DRAGGING) {
-					shift(2 * (float)crossover);
+					shift(1);
 				}
 			}
 		}
@@ -224,12 +224,12 @@ public class CoverFlow extends ViewGroup {
 		requestLayout();
 	}
 	
-	private void shift(float shift) {
+	private void shift(final int shiftdir) {
 		m_TouchState = TouchState.DRAG_SHIFTING;
 		
 		if (m_Animator != null)
 			m_Animator.cancel();
-		m_Animator = ValueAnimator.ofFloat(shift);
+		m_Animator = ValueAnimator.ofFloat(shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / (m_Views.length - 1));
 		m_Animator.setDuration(1000);
 		m_Animator.setInterpolator(new LinearInterpolator());
 		m_Animator.addUpdateListener(new AnimatorUpdateListener() {
@@ -241,6 +241,8 @@ public class CoverFlow extends ViewGroup {
 			}
 		});
 		m_Animator.addListener(new AnimatorListener() {
+			private boolean m_Canceled;
+			
 			@Override
 			public void onAnimationStart(Animator animation) {
 				Log.d("CoverFlow", "Shift animation begun.");
@@ -249,11 +251,14 @@ public class CoverFlow extends ViewGroup {
 			@Override
 			public void onAnimationEnd(Animator animation) {
 				m_TouchState = TouchState.DRAGGING;
+				if (!m_Canceled)
+					setPosition(m_CurrentPosition + shiftdir, true);
 				Log.d("CoverFlow", "Shift animation ended.");
 			}
 
 			@Override
 			public void onAnimationCancel(Animator animation) {
+				m_Canceled = true;
 				Log.d("CoverFlow", "Shift animation canceled.");
 			}
 
@@ -339,36 +344,52 @@ public class CoverFlow extends ViewGroup {
 		addView(newView);
 	}
 	
-	private void shiftViews(int shift) {
+	private void shiftViews(int shift, boolean skipMiddle) {
 		if (Math.abs(shift) >= m_Views.length) {
 			// whole m_Views list is invalid
 			for (int i = 0; i < m_Views.length; i++) {
+				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+					continue;
 				recycleView(i);
 			}
 		} else if (shift < 0) {
 			// we want to scroll left, so we need to move items right
 			for (int i = m_Views.length - 1; i >= 0; i--) {
+				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+					continue;
 				if (i - shift >= m_Views.length)
 					recycleView(i);
-				m_Views[i] = (i + shift < 0) ? null : m_Views[i + shift];
+				int newIndex = i + shift;
+				if (skipMiddle && i > NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE && newIndex <= NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+					newIndex--;
+				m_Views[i] = (newIndex < 0) ? null : m_Views[newIndex];
 			}
 		} else {
 			// all other options exhausted, they must want to scroll right, so move items left
 			for (int i = 0; i < m_Views.length; i++) {
+				if (skipMiddle && i == NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+					continue;
 				if (i - shift < 0)
 					recycleView(i);
-				m_Views[i] = (i + shift >= m_Views.length) ? null : m_Views[i + shift];
+				int newIndex = i + shift;
+				if (skipMiddle && i < NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE && newIndex >= NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE)
+					newIndex++;
+				m_Views[i] = (newIndex >= m_Views.length) ? null : m_Views[newIndex];
 			}
 		}
 	}
 	
 	public void setPosition(int position) {
+		setPosition(position, false);
+	}
+	
+	private void setPosition(int position, boolean skipMiddle) {
 		if (position < 0 || position >= m_Adapter.getCount())
 			throw new IndexOutOfBoundsException("Cannot set position beyond bounds of adapter.");
 		if (position == m_CurrentPosition)
 			return;
 		
-		shiftViews(m_CurrentPosition == -1 ? Integer.MAX_VALUE : position - m_CurrentPosition);
+		shiftViews(m_CurrentPosition == -1 ? Integer.MAX_VALUE : position - m_CurrentPosition, skipMiddle);
 		
 		m_SelectedView = null;
 		m_CurrentPosition = position;
