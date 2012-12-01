@@ -71,7 +71,12 @@ public class CoverFlow extends ViewGroup {
 				Log.d("CoverFlow", "Data set changed!");
 				for (int i = 0; i < m_Views.length; i++)
 					recycleView(i);
+				for (int i = 0; i < m_Views.length; i++)
+					Log.d("CoverFlow", String.format("%d: %s", i, m_Views[i]));
 				loadAndOrderViews();
+				for (int i = 0; i < m_Views.length; i++)
+					Log.d("CoverFlow", String.format("%d: %s", i, m_Views[i]));
+				
 			}
 			
 			@Override
@@ -336,7 +341,8 @@ public class CoverFlow extends ViewGroup {
 		
 		m_Adapter.registerDataSetObserver(m_AdapterObserver);
 		
-		setPosition(0);
+		if (m_Adapter.getCount() > 0)
+			setPosition(0);
 	}
 	
 	public Adapter getAdapter() {
@@ -525,7 +531,7 @@ public class CoverFlow extends ViewGroup {
 			
 			adjustScrollOffset(-m_ScrollOffset);
 			m_TouchState = TouchState.NONE;
-			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1 && false) {
+			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
 				Log.d("CoverFlow", "Swapping.");
 				m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
 			}
