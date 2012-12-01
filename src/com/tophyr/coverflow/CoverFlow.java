@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Adapter;
+import android.widget.FrameLayout;
 //import android.animation.Animator;
 //import android.animation.Animator.AnimatorListener;
 //import android.animation.ValueAnimator;
@@ -35,6 +36,79 @@ public class CoverFlow extends ViewGroup {
 		DRAG_SHIFTING;
 		
 		public float X;
+	}
+	
+	private static class CoverFlowContainerView extends ViewGroup {
+		public CoverFlowContainerView(Context context, View item) {
+			super(context);
+			setView(item);
+		}
+
+		@Override
+		protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+			// we want to be as wide as we are tall
+			int width, height;
+			switch (MeasureSpec.getMode(widthMeasureSpec)) {
+				case MeasureSpec.UNSPECIFIED:
+					width = Integer.MAX_VALUE;
+					break;
+				case MeasureSpec.AT_MOST:
+					// fallthrough!
+				case MeasureSpec.EXACTLY:
+					// fallthrough!
+				default:
+					width = MeasureSpec.getSize(widthMeasureSpec);
+					break;
+			}
+			
+			switch (MeasureSpec.getMode(heightMeasureSpec)) {
+				case MeasureSpec.UNSPECIFIED:
+					height = width;
+					break;
+				case MeasureSpec.AT_MOST:
+					// fallthrough!
+				case MeasureSpec.EXACTLY:
+					// fallthrough!
+				default:
+					if (MeasureSpec.getSize(heightMeasureSpec) < width) {
+						height = MeasureSpec.getSize(heightMeasureSpec);
+						if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY)
+							width = height;
+					} else {
+						height = width;
+					}
+					break;
+			}
+			
+			setMeasuredDimension(width, height);
+			
+			if (getChildCount() != 0) {			
+				final int sizeLimit = MeasureSpec.makeMeasureSpec((int)height, MeasureSpec.AT_MOST);
+				getChildAt(0).measure(sizeLimit, sizeLimit);
+			}
+		}
+		
+		@Override
+		protected void onLayout(boolean changed, int l, int t, int r, int b) {
+			if (getChildCount() == 0)
+				return;
+			
+			View v = getChildAt(0);
+			
+			v.layout((getMeasuredWidth() - v.getMeasuredWidth()) / 2, (getMeasuredHeight() - v.getMeasuredHeight()) / 2,
+					 (getMeasuredWidth() + v.getMeasuredWidth()) / 2, (getMeasuredHeight() + v.getMeasuredHeight()) / 2);
+		}
+		
+		public void setView(View item) {
+			removeAllViews();
+			addView(item);
+		}
+		
+		public View getView() {
+			if (getChildCount() == 0)
+				return null;
+			return getChildAt(0);
+		}
 	}
 	
 	private static final int NUM_VIEWS_ON_SIDE = 3;
