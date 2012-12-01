@@ -117,7 +117,7 @@ public class CoverFlow extends ViewGroup {
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
 
 	private MutableAdapter<?> m_Adapter;
-	private View[] m_Views;
+	private CoverFlowContainerView[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
 	private View m_SelectedView;
@@ -136,21 +136,15 @@ public class CoverFlow extends ViewGroup {
 	public CoverFlow(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
-		m_Views = new View[1 + 2 * NUM_VIEWS_ON_SIDE];
+		m_Views = new CoverFlowContainerView[1 + 2 * NUM_VIEWS_ON_SIDE];
 		m_SelectedPosition = -1;
 		
 		m_AdapterObserver = new DataSetObserver() {
 			@Override
 			public void onChanged() {
-				Log.d("CoverFlow", "Data set changed!");
 				for (int i = 0; i < m_Views.length; i++)
 					recycleView(i);
-				for (int i = 0; i < m_Views.length; i++)
-					Log.d("CoverFlow", String.format("%d: %s", i, m_Views[i]));
 				loadAndOrderViews();
-				for (int i = 0; i < m_Views.length; i++)
-					Log.d("CoverFlow", String.format("%d: %s", i, m_Views[i]));
-				
 			}
 			
 			@Override
@@ -321,9 +315,6 @@ public class CoverFlow extends ViewGroup {
 		m_TouchState = TouchState.DRAG_SHIFTING;
 		setPosition(m_CurrentPosition + shiftdir, true);
 
-		Log.d("CoverFlow", "Shifting.");
-
-
 //		m_TouchState = TouchState.DRAG_SHIFTING;
 		
 //		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
@@ -428,13 +419,14 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private void recycleView(int viewIndex) {
-		View v = m_Views[viewIndex];
+		CoverFlowContainerView v = m_Views[viewIndex];
 		if (v != null) {
 			m_Views[viewIndex] = null;
 			removeView(v);
 			final int adapterPosition = getAdapterIndex(viewIndex);
 			if (adapterPosition >= 0 && adapterPosition < m_Adapter.getCount())
-				m_RecycledViews.get(m_Adapter.getItemViewType(adapterPosition)).add(v);
+				m_RecycledViews.get(m_Adapter.getItemViewType(adapterPosition)).add(v.getView());
+			v.removeAllViews();
 		}
 	}
 	
@@ -450,8 +442,8 @@ public class CoverFlow extends ViewGroup {
 		if (recycled != null && recycled != newView)
 			recycleQueue.add(recycled);
 		
-		m_Views[viewIndex] = newView;
-		addView(newView);
+		m_Views[viewIndex] = new CoverFlowContainerView(getContext(), newView); // TODO: completely defeats recycling
+		addView(m_Views[viewIndex]);
 	}
 	
 	private void shiftViews(int shift, boolean skipMiddle) {
