@@ -329,7 +329,7 @@ public class CoverFlow extends ViewGroup {
 			if (m_ScrollOffset <= -crossover) {
 				m_ScrollOffset = 10 - crossover;
 				
-				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition < m_Views.length - 1) {
+				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition < m_Adapter.getCount() - 1) {
 					shift(1);
 				}
 			}
