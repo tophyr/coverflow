@@ -43,7 +43,6 @@ public class CoverFlow extends ViewGroup {
 	private static class CoverFlowContainerView extends ViewGroup {
 		private Camera m_Camera;
 		private Matrix m_Transform;
-		private Matrix m_CanvasMatrix;
 		
 		public CoverFlowContainerView(Context context, View item) {
 			super(context);
@@ -51,7 +50,6 @@ public class CoverFlow extends ViewGroup {
 			setWillNotDraw(false);
 			
 			m_Transform = new Matrix();
-			m_CanvasMatrix = new Matrix();
 			m_Camera = new Camera();
 			
 			setView(item);
@@ -124,30 +122,23 @@ public class CoverFlow extends ViewGroup {
 		}
 		
 		public void setRotationY(float rot) {
-//			Log.d("CoverFlow", "Setting rotation to " + rot + " deg");
-			//m_Camera.save();
-			//m_Camera.translate(getMeasuredWidth() / 2, getMeasuredHeight() / 2, 0);
-			//m_Camera.rotateY(rot);
-			//m_Camera.getMatrix(m_Transform);
-			//m_Camera.restore();
-//			super.setRotationY(rot);
-//			m_Transform = getMatrix();
-			super.setRotationY(rot);
-//			m_Transform.reset();
-//			m_Transform.setTranslate(0, 40);
+			m_Camera.save();
+			m_Camera.rotateY(rot);
+			m_Camera.getMatrix(m_Transform);
+			m_Camera.restore();
+			
+			m_Transform.preTranslate(-getMeasuredWidth() / 2, -getMeasuredHeight() / 2);
+			m_Transform.postTranslate(getMeasuredWidth() / 2, getMeasuredHeight() / 2);
+			
+			invalidate();
 		}
 
 		@Override
 		public void draw(Canvas canvas) {
-//			canvas.save();
-//			Matrix m = canvas.getMatrix();
-//			m.postTranslate(-(canvas.getWidth() - getMeasuredWidth()) / 2, -(canvas.getHeight() - getMeasuredHeight()) / 2);
-//			m.postConcat(m_Transform);
-//			//m.postTranslate((canvas.getWidth() - getMeasuredWidth()) / 2, (canvas.getHeight() - getMeasuredHeight()) / 2);
-//			Log.d("CoverFlow", "m: " + m);
-//			canvas.setMatrix(m);
+			canvas.save();
+			canvas.concat(m_Transform);
 			super.draw(canvas);
-//			canvas.restore();
+			canvas.restore();
 		}
 	}
 	
