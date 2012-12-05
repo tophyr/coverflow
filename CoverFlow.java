@@ -142,7 +142,7 @@ public class CoverFlow extends ViewGroup {
 		}
 	}
 	
-	private static final int NUM_VIEWS_ON_SIDE = 1;//3;
+	private static final int NUM_VIEWS_ON_SIDE = 3;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
