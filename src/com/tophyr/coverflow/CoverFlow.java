@@ -8,6 +8,9 @@ import java.util.TimerTask;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.graphics.Camera;
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.util.AttributeSet;
@@ -18,7 +21,6 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Adapter;
-import android.widget.FrameLayout;
 //import android.animation.Animator;
 //import android.animation.Animator.AnimatorListener;
 //import android.animation.ValueAnimator;
@@ -39,8 +41,19 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private static class CoverFlowContainerView extends ViewGroup {
+		private Camera m_Camera;
+		private Matrix m_Transform;
+		private Matrix m_CanvasMatrix;
+		
 		public CoverFlowContainerView(Context context, View item) {
 			super(context);
+			
+			setWillNotDraw(false);
+			
+			m_Transform = new Matrix();
+			m_CanvasMatrix = new Matrix();
+			m_Camera = new Camera();
+			
 			setView(item);
 		}
 
@@ -109,9 +122,36 @@ public class CoverFlow extends ViewGroup {
 				return null;
 			return getChildAt(0);
 		}
+		
+		public void setRotationY(float rot) {
+//			Log.d("CoverFlow", "Setting rotation to " + rot + " deg");
+			//m_Camera.save();
+			//m_Camera.translate(getMeasuredWidth() / 2, getMeasuredHeight() / 2, 0);
+			//m_Camera.rotateY(rot);
+			//m_Camera.getMatrix(m_Transform);
+			//m_Camera.restore();
+//			super.setRotationY(rot);
+//			m_Transform = getMatrix();
+			super.setRotationY(rot);
+//			m_Transform.reset();
+//			m_Transform.setTranslate(0, 40);
+		}
+
+		@Override
+		public void draw(Canvas canvas) {
+//			canvas.save();
+//			Matrix m = canvas.getMatrix();
+//			m.postTranslate(-(canvas.getWidth() - getMeasuredWidth()) / 2, -(canvas.getHeight() - getMeasuredHeight()) / 2);
+//			m.postConcat(m_Transform);
+//			//m.postTranslate((canvas.getWidth() - getMeasuredWidth()) / 2, (canvas.getHeight() - getMeasuredHeight()) / 2);
+//			Log.d("CoverFlow", "m: " + m);
+//			canvas.setMatrix(m);
+			super.draw(canvas);
+//			canvas.restore();
+		}
 	}
 	
-	private static final int NUM_VIEWS_ON_SIDE = 3;
+	private static final int NUM_VIEWS_ON_SIDE = 1;//3;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
@@ -223,7 +263,7 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private void layoutView(int viewIndex) {
-		View v = m_Views[viewIndex];
+		CoverFlowContainerView v = m_Views[viewIndex];
 		if (v == null)
 			return;
 		
@@ -249,7 +289,7 @@ public class CoverFlow extends ViewGroup {
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
-		//v.setRotationY(90f * (1 - (float)positionRatio * 2));
+		v.setRotationY(90f * (1 - (float)positionRatio * 2));
 		v.setVisibility((positionRatio > 0 && positionRatio < 1) ? View.VISIBLE : View.GONE);
 		
 		final int hCenterOffset = (int)(positionRatio * availWidth) + hMargin;
