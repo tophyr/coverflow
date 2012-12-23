@@ -247,10 +247,6 @@ public class CoverFlow extends ViewGroup {
 			}
 		}
 		
-		// only for animationless shit - get rid of this asap
-		if (m_TouchState == TouchState.DRAG_SHIFTING)
-			m_TouchState = TouchState.DRAGGING;
-		
 		layoutView(NUM_VIEWS_ON_SIDE);
 	}
 	
@@ -348,7 +344,7 @@ public class CoverFlow extends ViewGroup {
 //		setPosition(m_CurrentPosition + shiftdir, true);
 
 		m_TouchState = TouchState.DRAG_SHIFTING;
-		
+		Log.d("CFD", String.format("Shifting %d. Selected: %d, current: %d", shiftdir, m_SelectedPosition, m_CurrentPosition));
 		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
 		
 		if (m_Animator != null)
@@ -361,7 +357,6 @@ public class CoverFlow extends ViewGroup {
 			@Override
 			public void onAnimationUpdate(ValueAnimator animation) {
 				m_DragShiftOffset = (Float)animation.getAnimatedValue();
-				Log.d("CF", "m_DragShiftOffset: " + m_DragShiftOffset);
 				requestLayout();
 			}
 		};
@@ -593,6 +588,7 @@ public class CoverFlow extends ViewGroup {
 					m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
 					m_TouchState.X = x;
 					m_SelectedPosition = m_CurrentPosition;
+					Log.d("CFD", "Selected position: " + m_SelectedPosition);
 					((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
 					m_TouchDownTimer = null;
 				}
@@ -628,11 +624,11 @@ public class CoverFlow extends ViewGroup {
 				m_TouchDownTimer = null;
 			}
 			
-			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-				Log.d("CoverFlow", "Swapping.");
-				m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
-			}
-			m_SelectedPosition = -1;
+//			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
+//				Log.d("CoverFlow", "Swapping.");
+//				m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
+//			}
+//			m_SelectedPosition = -1;
 			
 			if (m_Animator != null)
 				m_Animator.cancel();
@@ -653,8 +649,8 @@ public class CoverFlow extends ViewGroup {
 				public void onAnimationEnd(Animator animation) {
 					m_TouchState = TouchState.NONE;
 					if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-						Log.d("CoverFlow", "Swapping.");
-						m_Adapter.swap(m_SelectedPosition, m_CurrentPosition);
+						Log.d("CoverFlow", "Swapping " + m_SelectedPosition + " with " + m_CurrentPosition);
+						m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
 					}
 					m_SelectedPosition = -1;
 				}
