@@ -6,16 +6,12 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import android.animation.Animator;
-import android.animation.Animator.AnimatorListener;
-import android.animation.ValueAnimator;
-import android.animation.ValueAnimator.AnimatorUpdateListener;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
-import android.os.SystemClock;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -24,8 +20,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.Adapter;
+
+import com.nineoldandroids.animation.Animator;
+import com.nineoldandroids.animation.Animator.AnimatorListener;
+import com.nineoldandroids.animation.ValueAnimator;
+import com.nineoldandroids.animation.ValueAnimator.AnimatorUpdateListener;
 
 public class CoverFlow extends ViewGroup {
 	
@@ -250,6 +250,7 @@ public class CoverFlow extends ViewGroup {
 		layoutView(NUM_VIEWS_ON_SIDE);
 	}
 	
+	@SuppressLint("NewApi")
 	private void layoutView(int viewIndex) {
 		CoverFlowContainerView v = m_Views[viewIndex];
 		if (v == null)
