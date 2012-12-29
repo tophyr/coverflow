@@ -1,6 +1,9 @@
-.classpath
-.project
-local.properties
 bin
 gen
-
+default.properties
+local.properties
+.metadata
+.settings
+.DS_Store
+proguard-project.txt
+*~
