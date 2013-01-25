@@ -239,7 +239,7 @@ public class CoverFlow extends ViewGroup {
 		setMeasuredDimension(width, height);
 		
 		final int numChildren = getChildCount();
-		final int sizeLimit = MeasureSpec.makeMeasureSpec((int)(height * .8), MeasureSpec.AT_MOST);
+		final int sizeLimit = MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST);
 		for (int i = 0; i < numChildren; i++) {
 			View v = getChildAt(i);
 			v.measure(sizeLimit, sizeLimit);
