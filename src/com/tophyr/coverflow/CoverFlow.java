@@ -12,6 +12,8 @@ import android.database.DataSetObserver;
 import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PaintFlagsDrawFilter;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -45,6 +47,9 @@ public class CoverFlow extends ViewGroup {
 	}
 	
 	private static class CoverFlowContainerView extends ViewGroup {
+		
+		private static final PaintFlagsDrawFilter PAINT_FLAGS_DRAW_FILTER = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG);
+		
 		private Camera m_Camera;
 		private Matrix m_Transform;
 		
@@ -141,6 +146,7 @@ public class CoverFlow extends ViewGroup {
 		public void draw(Canvas canvas) {
 			canvas.save();
 			canvas.concat(m_Transform);
+			canvas.setDrawFilter(PAINT_FLAGS_DRAW_FILTER);
 			super.draw(canvas);
 			canvas.restore();
 		}
