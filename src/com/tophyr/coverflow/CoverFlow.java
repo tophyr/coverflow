@@ -319,14 +319,14 @@ public class CoverFlow extends ViewGroup {
 			}
 		} else if (m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
 			if (m_ScrollOffset >= crossover) {
-				m_ScrollOffset = crossover - 10;
+				m_ScrollOffset = crossover;
 				
 				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition > 0) {
 					shift(-1);
 				}
 			}
 			if (m_ScrollOffset <= -crossover) {
-				m_ScrollOffset = 10 - crossover;
+				m_ScrollOffset = -crossover;
 				
 				if (m_TouchState == TouchState.DRAGGING && m_CurrentPosition < m_Adapter.getCount() - 1) {
 					shift(1);
