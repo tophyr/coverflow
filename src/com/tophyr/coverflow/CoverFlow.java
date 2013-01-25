@@ -288,7 +288,6 @@ public class CoverFlow extends ViewGroup {
 	private long m_NextDragSwitchAllowed;
 	
 	private void adjustScrollOffset(double delta) {
-		Log.d("CFD", "Adjusting scroll offset by " + delta);
 		if (delta == 0)
 			return;
 		
@@ -346,7 +345,6 @@ public class CoverFlow extends ViewGroup {
 //		setPosition(m_CurrentPosition + shiftdir, true);
 
 		m_TouchState = TouchState.DRAG_SHIFTING;
-		Log.d("CFD", String.format("Shifting %d. Selected: %d, current: %d", shiftdir, m_SelectedPosition, m_CurrentPosition));
 		final float shift = shiftdir * (getMeasuredWidth() - 2 * getMeasuredWidth() * (float)HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1) * 2);
 		
 		if (m_Animator != null)
@@ -372,7 +370,6 @@ public class CoverFlow extends ViewGroup {
 
 			@Override
 			public void onAnimationEnd(Animator animation) {
-				Log.d("CoverFlow", "Shift animation ended. Canceled: " + m_Canceled + " 2ndRun: " + m_2ndRun);
 				if (!m_Canceled && !m_2ndRun) {
 					setPosition(m_CurrentPosition + shiftdir, true);
 					m_2ndRun = true;
@@ -382,7 +379,6 @@ public class CoverFlow extends ViewGroup {
 					m_Animator.addListener(this);
 					m_Animator.start();
 				} else {
-					Log.d("CoverFlow", "Anim ended.");
 					m_TouchState = TouchState.DRAGGING;
 				}
 			}
@@ -575,7 +571,6 @@ public class CoverFlow extends ViewGroup {
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		Log.d("CFD", "TouchEvent: " + event.toString());
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN: {
 				getParent().requestDisallowInterceptTouchEvent(true);
@@ -596,7 +591,6 @@ public class CoverFlow extends ViewGroup {
 						m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
 						m_TouchState.X = x;
 						m_SelectedPosition = m_CurrentPosition;
-						Log.d("CFD", "Selected position: " + m_SelectedPosition);
 						((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
 						m_TouchDownTimer = null;
 					}
@@ -621,7 +615,7 @@ public class CoverFlow extends ViewGroup {
 					m_TouchState.X = x;
 				}
 				else {
-					Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
+					Log.i("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
 				}
 				
 				break;
@@ -638,13 +632,7 @@ public class CoverFlow extends ViewGroup {
 					m_TouchDownTimer.cancel();
 					m_TouchDownTimer = null;
 				}
-				
-//				if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-//					Log.d("CoverFlow", "Swapping.");
-//					m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
-//				}
-//				m_SelectedPosition = -1;
-				
+								
 				if (m_Animator != null)
 					m_Animator.cancel();
 				m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
@@ -664,7 +652,6 @@ public class CoverFlow extends ViewGroup {
 					public void onAnimationEnd(Animator animation) {
 						m_TouchState = TouchState.NONE;
 						if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-							Log.d("CoverFlow", "Swapping " + m_SelectedPosition + " with " + m_CurrentPosition);
 							m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
 						}
 						m_SelectedPosition = -1;
