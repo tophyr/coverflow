@@ -300,7 +300,7 @@ public class CoverFlow extends ViewGroup {
 				int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 				if (newPosition >= m_Adapter.getCount()) {
 					newPosition = m_Adapter.getCount() - 1;
-					m_ScrollOffset = crossover - 1;
+					m_ScrollOffset = crossover;
 				} else {
 					m_ScrollOffset = m_ScrollOffset % crossover - crossover;	
 				}
@@ -310,7 +310,7 @@ public class CoverFlow extends ViewGroup {
 				int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
 				if (newPosition < 0) {
 					newPosition = 0;
-					m_ScrollOffset = 1 - crossover;
+					m_ScrollOffset = -crossover;
 				} else {
 					m_ScrollOffset = m_ScrollOffset % crossover + crossover;
 				}
