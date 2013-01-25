@@ -288,6 +288,7 @@ public class CoverFlow extends ViewGroup {
 	private long m_NextDragSwitchAllowed;
 	
 	private void adjustScrollOffset(double delta) {
+		Log.d("CFD", "Adjusting scroll offset by " + delta);
 		if (delta == 0)
 			return;
 		
@@ -574,98 +575,114 @@ public class CoverFlow extends ViewGroup {
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			m_TouchState = TouchState.DOWN;
-			m_TouchState.X = event.getX();
-			if (m_Animator != null)
-				m_Animator.cancel();
-			if (m_TouchDownTimer != null)
-				Log.i("CoverFlow", "Received ACTION_DOWN but m_TouchDownTimer wasn't null.");
-			m_TouchDownTimer = new Timer();
-			m_TouchDownTimer.schedule(new TimerTask() {
-				@Override
-				public void run() {
-					float x = m_TouchState.X;
-					m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
-					m_TouchState.X = x;
-					m_SelectedPosition = m_CurrentPosition;
-					Log.d("CFD", "Selected position: " + m_SelectedPosition);
-					((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
-					m_TouchDownTimer = null;
-				}
-			}, DRAG_DELAY);
-		}
-		else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-			if (m_TouchState == TouchState.DOWN) {
-				if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
-					if (m_TouchDownTimer != null) {
-						m_TouchDownTimer.cancel();
+		Log.d("CFD", "TouchEvent: " + event.toString());
+		switch (event.getAction()) {
+			case MotionEvent.ACTION_DOWN: {
+				getParent().requestDisallowInterceptTouchEvent(true);
+				
+				m_TouchState = TouchState.DOWN;
+				m_TouchState.X = event.getX();
+				
+				if (m_Animator != null)
+					m_Animator.cancel();
+				
+				if (m_TouchDownTimer != null)
+					Log.i("CoverFlow", "Received ACTION_DOWN but m_TouchDownTimer wasn't null.");
+				m_TouchDownTimer = new Timer();
+				m_TouchDownTimer.schedule(new TimerTask() {
+					@Override
+					public void run() {
+						float x = m_TouchState.X;
+						m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
+						m_TouchState.X = x;
+						m_SelectedPosition = m_CurrentPosition;
+						Log.d("CFD", "Selected position: " + m_SelectedPosition);
+						((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
 						m_TouchDownTimer = null;
 					}
-					m_TouchState = TouchState.SCROLLING;
-					m_TouchState.X = event.getX();
-				}
-			} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
-				float x = event.getX();
-				adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
-				m_TouchState.X = x;
+				}, DRAG_DELAY);
+				
+				break;
 			}
-			else {
-				Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
-			}
-		}
-		else if (event.getAction() == MotionEvent.ACTION_CANCEL ||
-				 event.getAction() == MotionEvent.ACTION_UP) {
-			if (m_TouchState == TouchState.DRAGGING)
-				m_TouchState = TouchState.DRAG_SETTLING;
-			else
-				m_TouchState = TouchState.SETTLING;
-			if (m_TouchDownTimer != null) {
-				m_TouchDownTimer.cancel();
-				m_TouchDownTimer = null;
-			}
-			
-//			if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-//				Log.d("CoverFlow", "Swapping.");
-//				m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
-//			}
-//			m_SelectedPosition = -1;
-			
-			if (m_Animator != null)
-				m_Animator.cancel();
-			m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
-			//m_Animator.setDuration(2000);
-			m_Animator.addUpdateListener(new AnimatorUpdateListener() {
-				@Override
-				public void onAnimationUpdate(ValueAnimator animation) {
-					float delta = (Float)animation.getAnimatedValue() - (float)m_ScrollOffset;
-					adjustScrollOffset(delta);
-				}
-			});
-			m_Animator.addListener(new AnimatorListener() {
-				@Override
-				public void onAnimationStart(Animator animation) {}
-
-				@Override
-				public void onAnimationEnd(Animator animation) {
-					m_TouchState = TouchState.NONE;
-					if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
-						Log.d("CoverFlow", "Swapping " + m_SelectedPosition + " with " + m_CurrentPosition);
-						m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
+			case MotionEvent.ACTION_MOVE: {
+				if (m_TouchState == TouchState.DOWN) {
+					if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+						if (m_TouchDownTimer != null) {
+							m_TouchDownTimer.cancel();
+							m_TouchDownTimer = null;
+						}
+						
+						m_TouchState = TouchState.SCROLLING;
+						m_TouchState.X = event.getX();
 					}
-					m_SelectedPosition = -1;
+				} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
+					float x = event.getX();
+					adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
+					m_TouchState.X = x;
 				}
+				else {
+					Log.d("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
+				}
+				
+				break;
+			}
+			case MotionEvent.ACTION_CANCEL: // fallthrough!
+			case MotionEvent.ACTION_UP: {
+				getParent().requestDisallowInterceptTouchEvent(false);
+				
+				if (m_TouchState == TouchState.DRAGGING)
+					m_TouchState = TouchState.DRAG_SETTLING;
+				else
+					m_TouchState = TouchState.SETTLING;
+				if (m_TouchDownTimer != null) {
+					m_TouchDownTimer.cancel();
+					m_TouchDownTimer = null;
+				}
+				
+//				if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
+//					Log.d("CoverFlow", "Swapping.");
+//					m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
+//				}
+//				m_SelectedPosition = -1;
+				
+				if (m_Animator != null)
+					m_Animator.cancel();
+				m_Animator = ValueAnimator.ofFloat((float)m_ScrollOffset, 0f);
+				//m_Animator.setDuration(2000);
+				m_Animator.addUpdateListener(new AnimatorUpdateListener() {
+					@Override
+					public void onAnimationUpdate(ValueAnimator animation) {
+						float delta = (Float)animation.getAnimatedValue() - (float)m_ScrollOffset;
+						adjustScrollOffset(delta);
+					}
+				});
+				m_Animator.addListener(new AnimatorListener() {
+					@Override
+					public void onAnimationStart(Animator animation) {}
 
-				@Override
-				public void onAnimationCancel(Animator animation) {}
+					@Override
+					public void onAnimationEnd(Animator animation) {
+						m_TouchState = TouchState.NONE;
+						if (m_SelectedPosition != m_CurrentPosition && m_SelectedPosition != -1) {
+							Log.d("CoverFlow", "Swapping " + m_SelectedPosition + " with " + m_CurrentPosition);
+							m_Adapter.move(m_SelectedPosition, m_CurrentPosition);
+						}
+						m_SelectedPosition = -1;
+					}
 
-				@Override
-				public void onAnimationRepeat(Animator animation) {}
-			});
-			m_Animator.start();
+					@Override
+					public void onAnimationCancel(Animator animation) {}
+
+					@Override
+					public void onAnimationRepeat(Animator animation) {}
+				});
+				m_Animator.start();
+				
+				break;
+			}
+			default:
+				return super.onTouchEvent(event);
 		}
-		else
-			return super.onTouchEvent(event);
 		
 		return true;
 	}
