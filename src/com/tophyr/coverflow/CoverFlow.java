@@ -155,7 +155,6 @@ public class CoverFlow extends ViewGroup {
 	private CoverFlowContainerView[] m_Views;
 	private ArrayList<Queue<View>> m_RecycledViews;
 	private int m_CurrentPosition;
-	private View m_SelectedView;
 	private int m_SelectedPosition;
 	private double m_ScrollOffset;
 	private double m_DragShiftOffset;
@@ -298,8 +297,6 @@ public class CoverFlow extends ViewGroup {
 		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
 	}
 	
-	private long m_NextDragSwitchAllowed;
-	
 	private void adjustScrollOffset(double delta) {
 		if (delta == 0)
 			return;
@@ -356,7 +353,6 @@ public class CoverFlow extends ViewGroup {
 		if (m_Animator != null)
 			m_Animator.cancel();
 		m_Animator = ValueAnimator.ofFloat(0, shift);
-		//m_Animator.setDuration(1000);
 		
 		final AnimatorUpdateListener aul = new AnimatorUpdateListener() {
 			@Override
@@ -383,7 +379,6 @@ public class CoverFlow extends ViewGroup {
 						m_Animator = ValueAnimator.ofFloat(-shift, 0);
 						m_Animator.addUpdateListener(aul);
 						m_Animator.addListener(this);
-						//m_Animator.setDuration(1000);
 						m_Animator.start();
 					} else {
 						m_TouchState = TouchState.DRAGGING;
@@ -402,20 +397,6 @@ public class CoverFlow extends ViewGroup {
 		m_Animator.start();
 	}
 	
-//	@Override
-//	public View getSelectedView() {
-//		return m_Selected ? m_Views[NUM_VIEWS_OFFSCREEN + NUM_VIEWS_ON_SIDE] : null;
-//	}
-//
-//	@Override
-//	public void setSelection(int position) {
-//		if (position != m_CurrentPosition)
-//			setPosition(position);
-//		
-//		m_Selected = true;
-//	}
-//	
-//	@Override
 	public void setAdapter(MutableAdapter<?> adapter) {
 		if (m_Adapter != null)
 			m_Adapter.unregisterDataSetObserver(m_AdapterObserver);
@@ -527,7 +508,6 @@ public class CoverFlow extends ViewGroup {
 		
 		shiftViews(m_CurrentPosition == -1 ? Integer.MAX_VALUE : position - m_CurrentPosition, skipMiddle);
 		
-		m_SelectedView = null;
 		m_CurrentPosition = position;
 		
 		loadAndOrderViews();
