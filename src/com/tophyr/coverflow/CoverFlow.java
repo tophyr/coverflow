@@ -182,6 +182,11 @@ public class CoverFlow extends ViewGroup {
 		m_AdapterObserver = new DataSetObserver() {
 			@Override
 			public void onChanged() {
+				if (m_CurrentPosition == -1 && m_Adapter.getCount() > 0)
+					m_CurrentPosition = 0;
+				else if (m_CurrentPosition >= m_Adapter.getCount())
+					m_CurrentPosition = m_Adapter.getCount() - 1;
+				
 				for (int i = 0; i < m_Views.length; i++)
 					recycleView(i);
 				loadAndOrderViews();
