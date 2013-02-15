@@ -584,7 +584,7 @@ public class CoverFlow extends ViewGroup {
 	public boolean onTouchEvent(MotionEvent event) {
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN: {
-				getParent().requestDisallowInterceptTouchEvent(true);
+				//getParent().requestDisallowInterceptTouchEvent(true);
 				
 				m_TouchState = TouchState.DOWN;
 				m_TouchState.X = event.getX();
@@ -637,7 +637,7 @@ public class CoverFlow extends ViewGroup {
 			}
 			case MotionEvent.ACTION_CANCEL: // fallthrough!
 			case MotionEvent.ACTION_UP: {
-				getParent().requestDisallowInterceptTouchEvent(false);
+				//getParent().requestDisallowInterceptTouchEvent(false);
 				
 				if (m_TouchState == TouchState.DRAGGING)
 					m_TouchState = TouchState.DRAG_SETTLING;
