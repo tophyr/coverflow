@@ -69,34 +69,34 @@ public class CoverFlow extends ViewGroup {
 		protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 			// we want to be as wide as we are tall
 			int width, height;
-			switch (MeasureSpec.getMode(widthMeasureSpec)) {
+			switch (MeasureSpec.getMode(heightMeasureSpec)) {
 				case MeasureSpec.UNSPECIFIED:
-					width = Integer.MAX_VALUE;
+					height = Integer.MAX_VALUE;
 					break;
 				case MeasureSpec.AT_MOST:
 					// fallthrough!
 				case MeasureSpec.EXACTLY:
 					// fallthrough!
 				default:
-					width = MeasureSpec.getSize(widthMeasureSpec);
+					height = MeasureSpec.getSize(heightMeasureSpec);
 					break;
 			}
 			
-			switch (MeasureSpec.getMode(heightMeasureSpec)) {
+			switch (MeasureSpec.getMode(widthMeasureSpec)) {
 				case MeasureSpec.UNSPECIFIED:
-					height = width;
+					width = height;
 					break;
 				case MeasureSpec.AT_MOST:
 					// fallthrough!
 				case MeasureSpec.EXACTLY:
 					// fallthrough!
 				default:
-					if (MeasureSpec.getSize(heightMeasureSpec) < width) {
-						height = MeasureSpec.getSize(heightMeasureSpec);
-						if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY)
-							width = height;
+					if (MeasureSpec.getSize(widthMeasureSpec) < height) {
+						width = MeasureSpec.getSize(widthMeasureSpec);
+						if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY)
+							height = width;
 					} else {
-						height = width;
+						width = height;
 					}
 					break;
 			}
@@ -104,7 +104,7 @@ public class CoverFlow extends ViewGroup {
 			setMeasuredDimension(width, height);
 			
 			if (getChildCount() != 0) {			
-				final int sizeLimit = MeasureSpec.makeMeasureSpec((int)height, MeasureSpec.AT_MOST);
+				final int sizeLimit = MeasureSpec.makeMeasureSpec((int)width, MeasureSpec.AT_MOST);
 				getChildAt(0).measure(sizeLimit, sizeLimit);
 			}
 		}
@@ -142,6 +142,18 @@ public class CoverFlow extends ViewGroup {
 			
 			invalidate();
 		}
+		
+		public void setRotationX(float rot) {
+			m_Camera.save();
+			m_Camera.rotateX(-rot);
+			m_Camera.getMatrix(m_Transform);
+			m_Camera.restore();
+			
+			m_Transform.preTranslate(-getMeasuredWidth() / 2, -getMeasuredHeight() / 2);
+			m_Transform.postTranslate(getMeasuredWidth() / 2, getMeasuredHeight() / 2);
+			
+			invalidate();
+		}
 
 		@Override
 		public void draw(Canvas canvas) {
@@ -156,7 +168,7 @@ public class CoverFlow extends ViewGroup {
 	private static final int NUM_VIEWS_ON_SIDE = 3;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
-	private static final double VERT_MARGIN_FRACTION = 0.05; //TODO NEW
+	private static final double VERT_MARGIN_FRACTION = 0.05;
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
 
 	private MutableAdapter<?> m_Adapter;
@@ -209,7 +221,7 @@ public class CoverFlow extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		// we want to be twice as wide as we are tall TODO twice as tall as it is wide
+		// fills the space
 		int width, height;
 		switch (MeasureSpec.getMode(heightMeasureSpec)) {
 			case MeasureSpec.UNSPECIFIED:
@@ -226,20 +238,14 @@ public class CoverFlow extends ViewGroup {
 		
 		switch (MeasureSpec.getMode(widthMeasureSpec)) {
 			case MeasureSpec.UNSPECIFIED:
-				width = height / 2;
+				width = Integer.MAX_VALUE;
 				break;
 			case MeasureSpec.AT_MOST:
 				// fallthrough!
 			case MeasureSpec.EXACTLY:
 				// fallthrough!
 			default:
-				if (MeasureSpec.getSize(widthMeasureSpec) < height / 2) {
-					width = MeasureSpec.getSize(widthMeasureSpec);
-					if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY)
-						height = width * 2;
-				} else {
-					width = height / 2;
-				}
+				width = MeasureSpec.getSize(widthMeasureSpec);
 				break;
 		}
 		
@@ -294,20 +300,24 @@ public class CoverFlow extends ViewGroup {
 		
 		final int vWidth = v.getMeasuredWidth();
 		final int vHeight = v.getMeasuredHeight();
-		final int hMargin = (int)(getMeasuredWidth() * HORIZ_MARGIN_FRACTION);
-		final int availWidth = getMeasuredWidth() - 2 * hMargin;
-		final int totalHeight = getMeasuredHeight();
+		final int vertMargin = (int)(getMeasuredHeight() * VERT_MARGIN_FRACTION);
+		//final int hMargin = (int)(getMeasuredWidth() * HORIZ_MARGIN_FRACTION);
+		final int availHeight = getMeasuredHeight() - 2 * vertMargin;
+		//final int availWidth = getMeasuredWidth() - 2 * hMargin;
+		final int totalWidth = getMeasuredWidth();
+		//final int totalHeight = getMeasuredHeight();
 		
 		double positionRatio = viewIndex / (m_Views.length - 1.0); // gives [0, 1] range
-		positionRatio -= offset / availWidth;
+		positionRatio -= offset / availHeight;
 		positionRatio = (positionRatio - .5) * 2; // transform to [-1, +1] range
 		positionRatio = Math.signum(positionRatio) * Math.sqrt(Math.abs(positionRatio)); // "stretch" position away from center
 		positionRatio = positionRatio / 2 + .5; // transform back to [0, 1] range
-		v.setRotationY(90f * (1 - (float)positionRatio * 2));
+		v.setRotationX(90f * (1 - (float)positionRatio * 2));
 		v.setVisibility((positionRatio > 0 && positionRatio < 1) ? View.VISIBLE : View.GONE);
 		
-		final int hCenterOffset = (int)(positionRatio * availWidth) + hMargin;
-		v.layout(hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
+		final int hCenterOffset = (int)(positionRatio * availHeight) + vertMargin;
+		v.layout( (totalWidth - vWidth) / 2, hCenterOffset - vHeight / 2, (totalWidth + vWidth) / 2, hCenterOffset + vHeight / 2);
+		//v.layout( hCenterOffset - vWidth / 2, (totalHeight - vHeight) / 2, hCenterOffset + vWidth / 2, (totalHeight + vHeight) / 2);
 	}
 	
 	private void adjustScrollOffset(double delta) {
@@ -316,7 +326,7 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * VERT_MARGIN_FRACTION) / ((m_Views.length - 1.0) * 2);
+		double crossover = (getMeasuredHeight() - 2 * getMeasuredHeight() * HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1.0) * 2);
 		if (m_TouchState == TouchState.SCROLLING) {
 			if (m_ScrollOffset >= crossover) {
 				int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
