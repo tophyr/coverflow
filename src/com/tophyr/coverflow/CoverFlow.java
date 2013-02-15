@@ -209,36 +209,36 @@ public class CoverFlow extends ViewGroup {
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		// we want to be twice as wide as we are tall
+		// we want to be twice as wide as we are tall TODO twice as tall as it is wide
 		int width, height;
-		switch (MeasureSpec.getMode(widthMeasureSpec)) {
+		switch (MeasureSpec.getMode(heightMeasureSpec)) {
 			case MeasureSpec.UNSPECIFIED:
-				width = Integer.MAX_VALUE;
+				height = Integer.MAX_VALUE;
 				break;
 			case MeasureSpec.AT_MOST:
 				// fallthrough!
 			case MeasureSpec.EXACTLY:
 				// fallthrough!
 			default:
-				width = MeasureSpec.getSize(widthMeasureSpec);
+				height = MeasureSpec.getSize(heightMeasureSpec);
 				break;
 		}
 		
-		switch (MeasureSpec.getMode(heightMeasureSpec)) {
+		switch (MeasureSpec.getMode(widthMeasureSpec)) {
 			case MeasureSpec.UNSPECIFIED:
-				height = width / 2;
+				width = height / 2;
 				break;
 			case MeasureSpec.AT_MOST:
 				// fallthrough!
 			case MeasureSpec.EXACTLY:
 				// fallthrough!
 			default:
-				if (MeasureSpec.getSize(heightMeasureSpec) < width / 2) {
-					height = MeasureSpec.getSize(heightMeasureSpec);
-					if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY)
-						width = height * 2;
+				if (MeasureSpec.getSize(widthMeasureSpec) < height / 2) {
+					width = MeasureSpec.getSize(widthMeasureSpec);
+					if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY)
+						height = width * 2;
 				} else {
-					height = width / 2;
+					width = height / 2;
 				}
 				break;
 		}
