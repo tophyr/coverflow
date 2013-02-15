@@ -44,6 +44,7 @@ public class CoverFlow extends ViewGroup {
 		DRAG_SHIFT_SETTLING;
 		
 		public float X;
+		public float Y;
 	}
 	
 	private static class CoverFlowContainerView extends ViewGroup {
@@ -155,6 +156,7 @@ public class CoverFlow extends ViewGroup {
 	private static final int NUM_VIEWS_ON_SIDE = 3;
 	
 	private static final double HORIZ_MARGIN_FRACTION = 0.05;
+	private static final double VERT_MARGIN_FRACTION = 0.05; //TODO NEW
 	private static final double DRAG_SENSITIVITY_FACTOR = 2.5; // experimentally derived; lower numbers produce higher drag speeds
 
 	private MutableAdapter<?> m_Adapter;
@@ -314,7 +316,7 @@ public class CoverFlow extends ViewGroup {
 		
 		m_ScrollOffset += delta;
 		
-		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * HORIZ_MARGIN_FRACTION) / ((m_Views.length - 1.0) * 2);
+		double crossover = (getMeasuredWidth() - 2 * getMeasuredWidth() * VERT_MARGIN_FRACTION) / ((m_Views.length - 1.0) * 2);
 		if (m_TouchState == TouchState.SCROLLING) {
 			if (m_ScrollOffset >= crossover) {
 				int newPosition = m_CurrentPosition + (int)(m_ScrollOffset / crossover);
@@ -576,6 +578,7 @@ public class CoverFlow extends ViewGroup {
 				
 				m_TouchState = TouchState.DOWN;
 				m_TouchState.X = event.getX();
+				m_TouchState.Y = event.getY(); //TODO NEW
 				
 				if (m_Animator != null)
 					m_Animator.cancel();
@@ -586,9 +589,11 @@ public class CoverFlow extends ViewGroup {
 				m_TouchDownTimer.schedule(new TimerTask() {
 					@Override
 					public void run() {
-						float x = m_TouchState.X;
+						float y = m_TouchState.Y;
+						float x = m_TouchState.X; //TODO NEW
 						m_TouchState = TouchState.DRAGGING; // TODO: race condition possible
-						m_TouchState.X = x;
+						m_TouchState.Y = y;
+						m_TouchState.X = x; //TODO NEW
 						m_SelectedPosition = m_CurrentPosition;
 						((Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE)).vibrate(200);
 						m_TouchDownTimer = null;
@@ -599,19 +604,20 @@ public class CoverFlow extends ViewGroup {
 			}
 			case MotionEvent.ACTION_MOVE: {
 				if (m_TouchState == TouchState.DOWN) {
-					if (Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+					if (Math.abs(m_TouchState.Y - event.getY()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()
+							|| Math.abs(m_TouchState.X - event.getX()) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
 						if (m_TouchDownTimer != null) {
 							m_TouchDownTimer.cancel();
 							m_TouchDownTimer = null;
 						}
 						
 						m_TouchState = TouchState.SCROLLING;
-						m_TouchState.X = event.getX();
+						m_TouchState.Y = event.getY();
 					}
 				} else if (m_TouchState == TouchState.SCROLLING || m_TouchState == TouchState.DRAGGING || m_TouchState == TouchState.DRAG_SHIFTING) {
-					float x = event.getX();
-					adjustScrollOffset((m_TouchState.X - x) / DRAG_SENSITIVITY_FACTOR);
-					m_TouchState.X = x;
+					float y = event.getY();
+					adjustScrollOffset((m_TouchState.Y - y) / DRAG_SENSITIVITY_FACTOR);
+					m_TouchState.Y = y;
 				}
 				else {
 					Log.i("CoverPagerDemo", "Uhh, got an ACTION_MOVE but wasn't in DOWN, SCROLLING or DRAGGING.");
