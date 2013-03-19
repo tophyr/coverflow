@@ -582,6 +582,8 @@ public class CoverFlow extends ViewGroup {
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		if (m_Adapter.getCount() < 1) return false;
+		
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN: {
 				//getParent().requestDisallowInterceptTouchEvent(true);
