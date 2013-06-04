@@ -7,3 +7,11 @@ local.properties
 .DS_Store
 proguard-project.txt
 *~
+
+#IntelliJ IDEA
+.idea
+*.iml
+*.ipr
+*.iws
+classes
+gen-external-apklibs
